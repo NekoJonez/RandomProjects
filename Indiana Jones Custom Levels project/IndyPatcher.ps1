@@ -1,7 +1,7 @@
 # NekoJonez presents Indiana Jones and the Infernal Machine - Automatic Patcher for custom levels.
 # Based upon the work & tools by the modders over at https://github.com/Jones3D-The-Infernal-Engine/Mods/tree/main/levels/sed
 # Written in PowerShell core 7.4.3. Will work with PowerShell 5.1 & 7+.
-# Build 1.0 BETA - 14/07/2024
+# Build 1.0 BETA 2 - 15/07/2024
 # Visit my gaming blog: https://arpegi.wordpress.com
 
 # Function to move files while skipping existing files
@@ -89,13 +89,11 @@ $form.StartPosition = "CenterScreen"
 
 # Let's create column styles.
 $columnStyle1_location = New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 90)
-$columnStyle1_tools = New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 90)
 $columnStyle2_location = New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 10)
-$columnStyle2_tools = New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 10)
 
 # Create the TableLayoutPanel, so that it's better visually and I don't have to guess their location.
 $tableLayoutPanel = New-Object System.Windows.Forms.TableLayoutPanel
-$tableLayoutPanel.RowCount = 8
+$tableLayoutPanel.RowCount = 6
 $tableLayoutPanel.ColumnCount = 1
 $tableLayoutPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
 
@@ -107,7 +105,7 @@ $label_location.Dock = [System.Windows.Forms.DockStyle]::Fill
 $label_location.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
 $tableLayoutPanel.Controls.Add($label_location)
 
-# For the first "locate" button.
+# For the locate button.
 $tableLayoutPanelLocation = New-Object System.Windows.Forms.TableLayoutPanel
 $tableLayoutPanelLocation.Dock = [System.Windows.Forms.DockStyle]::Fill
 $tableLayoutPanelLocation.RowCount = 1
@@ -129,34 +127,16 @@ $button_location.Cursor = [System.Windows.Forms.Cursors]::Hand
 $tableLayoutPanelLocation.Controls.Add($button_location)
 $tableLayoutPanel.Controls.Add($tableLayoutPanelLocation)
 
-# Create a label for the tools location
-$label_tools = New-Object System.Windows.Forms.Label
-$label_tools.Text = "Enter your tools zip location:"
-$label_tools.AutoSize = $true
-$label_tools.Dock = [System.Windows.Forms.DockStyle]::Fill
-$label_tools.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
-$tableLayoutPanel.Controls.Add($label_tools)
+# Add the click event for the button
+$button_location.Add_Click({
+    $folderBrowser = New-Object System.Windows.Forms.FolderBrowserDialog
+    $folderBrowser.Description = "Select the folder"
+    $folderBrowser.ShowNewFolderButton = $true
 
-# For the second "locate" button.
-$tableLayoutPanelTools = New-Object System.Windows.Forms.TableLayoutPanel
-$tableLayoutPanelTools.Dock = [System.Windows.Forms.DockStyle]::Fill
-$tableLayoutPanelTools.RowCount = 1
-$tableLayoutPanelTools.ColumnCount = 2
-$tableLayoutPanelTools.ColumnStyles.Add($columnStyle1_tools)
-$tableLayoutPanelTools.ColumnStyles.Add($columnStyle2_tools)
-
-# Create a text box for user input
-$textBox_tools = New-Object System.Windows.Forms.TextBox
-$textBox_tools.Dock = [System.Windows.Forms.DockStyle]::Fill
-$tableLayoutPanelTools.Controls.Add($textBox_tools)
-
-# Create a button to let the user look for the tools zip
-$button_tools = New-Object System.Windows.Forms.Button
-$button_tools.Text = "Search"
-$button_tools.AutoSize = $true
-$button_tools.Cursor = [System.Windows.Forms.Cursors]::Hand
-$tableLayoutPanelTools.Controls.Add($button_tools)
-$tableLayoutPanel.Controls.Add($tableLayoutPanelTools)
+    if ($folderBrowser.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+        $textBox_location.Text = $folderBrowser.SelectedPath
+    }
+})
 
 # Create a label for the tools location
 $label_regkey = New-Object System.Windows.Forms.Label
@@ -191,7 +171,10 @@ $logBox.ScrollBars = [System.Windows.Forms.ScrollBars]::Vertical
 $logBox.Dock = [System.Windows.Forms.DockStyle]::Fill
 $tableLayoutPanel.Controls.Add($logBox)
 
-# TODO: implement an admin check.
+if (!(New-Object System.Security.Principal.WindowsPrincipal([System.Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    [System.Windows.Forms.MessageBox]::Show("This script needs to be run as administrator. Since the patch needs to change a reg key, and you can't do that without admin permissions.", "Admin Rights Required", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+    exit
+}
 
 # Add button click event
 $button.Add_Click({
@@ -222,28 +205,29 @@ $button.Add_Click({
             return
         }
 
-        $hash_tools_expected = "a241be464cdd59824ddb9ad8c72ebe9de11f1c37ef4be5e3b2640eaa2e6ea06b" # v0.10.1 from GitHub: https://github.com/smlu/Urgon/releases/tag/v0.10.1
-        if ($textBox_tools.text) {
-            $hash_tools_get = (Get-Filehash -Path $textbox_tools.Text -Algorithm SHA256).Hash
-            if ($hash_tools_get -eq $hash_tools_expected) {
-                # Extract tools and move them to their proper locations.
-                try {
-                    # TODO: implement here a check if tools already exist in their rightful location.
-                    Expand-Archive -Path $textbox_tools.Text -DestinationPath $textbox_location.Text
-                    $logBox.AppendText("Success: Exported tools to right location.`n")
-                }
-                catch {
-                    $logBox.AppendText("Error: Problems with exporting tools to right location. $($_.Exception.Message). Stopping pathing procedure.`n")
-                    return
-                }
-            }
-            else {
-                $logBox.AppendText("Error: Invalid toolset provided. Stopping pathing procedure.`n")
-                return
-            }
+        # Let's download the working version of the tools. I'm going to hardcode v0.10.1 here for now, since if Kovic's PR (https://github.com/smlu/Urgon/pull/11) ever gets merged,
+        # later logic will need to change.
+        $Temp_Path = "C:\IndyPatcher_Temp"
+        $Tools_Temp_Path = "C:\IndyPatcher_Temp\urgon-windows-x86-64.zip"
+        if (Test-Path -Path $Temp_Path) {
+            New-Item -Path $Temp_Path -Type Directory
         }
-        else {
-            $logBox.AppendText("Error: Tools not provided.`n")
+
+        try {
+            Invoke-WebRequest -Uri https://github.com/smlu/Urgon/releases/download/v0.10.1/urgon-windows-x86-64.zip -OutFile $Tools_Temp_Path
+            $logBox.AppendText("Success: Tools v0.10.1 succesfully downloaded.`n")
+        }
+        catch {
+            $logBox.AppendText("Error: Tools couldn't be downloaded. $($_.Exception.Message). Stopping pathing procedure.`n")
+            return
+        }
+
+        try {
+            Expand-Archive -Path $Tools_Temp_Path -DestinationPath $textbox_location.Text
+            $logBox.AppendText("Success: Tools v0.10.1 succesfully extracted from zip file and placed in resource folder.`n")
+        }
+        catch {
+            $logBox.AppendText("Error: Tools couldn't be extracted and moved. $($_.Exception.Message). Stopping pathing procedure.`n")
             return
         }
 
@@ -311,12 +295,18 @@ $button.Add_Click({
         # Remove files using foreach loop, after this step 2 is done.
         foreach ($filePathToRemove in $filePathsToRemove) {
             if (Test-Path -Path $filePathToRemove) {
-                # TODO: let's not remove them but move them to a "backup" folder. This is a dirty solution.
-                Remove-Item -Path $filePathToRemove -Force -ErrorAction SilentlyContinue
+                $fileDirectory = [System.IO.Path]::GetDirectoryName($filePathToRemove)
+                $fileName = [System.IO.Path]::GetFileNameWithoutExtension($filePathToRemove)
+                $fileExtension = [System.IO.Path]::GetExtension($filePathToRemove)
+
+                $newFileName = "$fileName`_backup$fileExtension"
+                $newFilePath = [System.IO.Path]::Combine($fileDirectory, $newFileName)
+
+                Rename-Item -Path $filePathToRemove -NewName $newFilePath -Force
             }
         }
 
-        $logBox.AppendText("Success: GOB files were removed succesfully.`n")
+        $logBox.AppendText("Success: GOB files were renamed succesfully. You can remove the '_backup' if you want to reuse the standard ones.`n")
 
         # Now, let's move the CNDtool to it's rightful location.
         $cnd_tool_test = Join-Path $textBox_location.Text -ChildPath "cndtool.exe"
