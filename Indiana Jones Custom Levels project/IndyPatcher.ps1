@@ -81,6 +81,11 @@ function Update-RegistryStartMode {
 # Let's show a form on screen.
 Add-Type -AssemblyName System.Windows.Forms
 
+if (!(New-Object System.Security.Principal.WindowsPrincipal([System.Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    [System.Windows.Forms.MessageBox]::Show("This script needs to be run as administrator. Since the patch needs to change a reg key, and you can't do that without admin permissions.", "Admin Rights Required", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+    exit
+}
+
 # Create the form
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "Indiana Jones and the Infernal Machine - Custom level patcher"
@@ -112,6 +117,7 @@ $tableLayoutPanelLocation.RowCount = 1
 $tableLayoutPanelLocation.ColumnCount = 2
 $tableLayoutPanelLocation.ColumnStyles.Add($columnStyle1_location)
 $tableLayoutPanelLocation.ColumnStyles.Add($columnStyle2_location)
+$tableLayoutPanel.Controls.Add($tableLayoutPanelLocation)
 
 # Create a text box for user input
 $textBox_location = New-Object System.Windows.Forms.TextBox
@@ -125,7 +131,6 @@ $button_location.Text = "Search"
 $button_location.AutoSize = $true
 $button_location.Cursor = [System.Windows.Forms.Cursors]::Hand
 $tableLayoutPanelLocation.Controls.Add($button_location)
-$tableLayoutPanel.Controls.Add($tableLayoutPanelLocation)
 
 # Add the click event for the button
 $button_location.Add_Click({
@@ -171,15 +176,10 @@ $logBox.ScrollBars = [System.Windows.Forms.ScrollBars]::Vertical
 $logBox.Dock = [System.Windows.Forms.DockStyle]::Fill
 $tableLayoutPanel.Controls.Add($logBox)
 
-if (!(New-Object System.Security.Principal.WindowsPrincipal([System.Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    [System.Windows.Forms.MessageBox]::Show("This script needs to be run as administrator. Since the patch needs to change a reg key, and you can't do that without admin permissions.", "Admin Rights Required", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-    exit
-}
-
 # Add button click event
 $button.Add_Click({
         # TODO: implement a lock here for the other buttons.
-        # TODO: implement when return, to unlock the inputs.
+        # TODO: implement when return, to unlock the inputs. So, it's time for a boolean variable. Phft, refactoring :/
         if ($textBox_location.Text) {
             $folder_path = $textBox_location.Text
 
@@ -274,6 +274,7 @@ $button.Add_Click({
             return
         }
 
+        # ! Warning to later self. Kovic created a patch PR that the gobext.exe doesn't work with sub folders anymore. If a newer version releases, refactor the code underneath here.
         # Define source parent folders and destination folder
         $cd1_gob_location = Join-Path $textbox_location.text -ChildPath "CD1_GOB"
         $cd2_gob_location = Join-Path $textbox_location.text -ChildPath "CD2_GOB"
@@ -310,7 +311,7 @@ $button.Add_Click({
 
         # Now, let's move the CNDtool to it's rightful location.
         $cnd_tool_test = Join-Path $textBox_location.Text -ChildPath "cndtool.exe"
-        $ndy_folder_location = Join-Path $textBox_location.text -ChildPath "NDY"
+        $ndy_folder_location = Join-Path $textBox_location.text -ChildPath "ndy"
         if (Test-Path -Path $cnd_tool_test) {
             if (Test-Path -Path $ndy_folder_location) {
                 Move-Item -Path $cnd_tool_test -Destination $ndy_folder_location
