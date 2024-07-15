@@ -1,7 +1,7 @@
 # NekoJonez presents Indiana Jones and the Infernal Machine - Automatic Patcher for custom levels.
 # Based upon the work & tools by the modders over at https://github.com/Jones3D-The-Infernal-Engine/Mods/tree/main/levels/sed
 # Written in PowerShell core 7.4.3. Will work with PowerShell 5.1 & 7+.
-# Build 1.0 RC1 - 15/07/2024
+# Build 1.0 RC2 - 15/07/2024
 # Visit my gaming blog: https://arpegi.wordpress.com
 
 # Function to move files while skipping existing files
@@ -33,11 +33,11 @@ function MoveFilesAndRemoveSource {
                     Move-Item -Path $_.FullName -Destination $destinationFile -Force
                 }
             }
-
-            # Remove the source subfolder after moving its contents
-            # TODO: Checking why it doesn't remove the folder here?
-            Remove-Item -Path $fullSourcePath -Recurse -Force
         }
+
+        # Remove the source subfolder after moving its contents
+        # TODO: Checking why it doesn't remove the folder here?
+        Remove-Item -Path $fullSourcePath -Recurse -Force
     }
 }
 
@@ -522,7 +522,7 @@ $button.Add_Click({
             if (Test-Path -Path $cnd_extract_lvl18) {
                 $logBox.AppendText("Info: NDY file for level 18 found. Extracting...`n")
                 .\cndtool.exe extract .\jones3dstatic.cnd
-                $logBox.AppendText("Success: NDY file for level 18 extracted. This was the final one`n")
+                $logBox.AppendText("Success: NDY file for level 18 extracted. This was the final one.`n")
             }
             else {
                 $logBox.AppendText("Error: NDY file for level 18 not found. Stopping the patching.`n")
@@ -626,8 +626,6 @@ $button.Add_Click({
 
             $logBox.AppendText("Success: patching was successful.`n")
         }
-
-        # TODO: installing the first custom level?
     })
 
 # Add the TableLayoutPanel to the form
