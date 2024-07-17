@@ -18,4 +18,7 @@ v1.1 - 17/07/2024
 * Code: Renamed a variable to make it more clear what it does.
 * Fixed: The registry edit could fail in some cases.	
 * Fixed: Removed the unneeded white space between the file input field and reg selection.
- 
+
+v1.0 - 15/07/2024
+
+Initial release
