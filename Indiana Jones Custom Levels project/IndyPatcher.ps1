@@ -1,7 +1,7 @@
 # NekoJonez presents Indiana Jones and the Infernal Machine - Automatic Patcher for custom levels.
 # Based upon the work & tools by the modders over at https://github.com/Jones3D-The-Infernal-Engine/Mods/tree/main/levels/sed
 # Written in PowerShell core 7.4.3. Will work with PowerShell 5.1 & 7+.
-# Build 1.0 RC2 - 15/07/2024
+# Build 1.1 RC1 - 17/07/2024
 # Visit my gaming blog: https://arpegi.wordpress.com
 
 # Function to move files while skipping existing files
@@ -45,24 +45,63 @@ function MoveFilesAndRemoveSource {
 function Update-RegistryStartMode {
     param(
         [Parameter(Mandatory = $true)]
-        [string]$registryPath
+        [int]$selectedIndex,
+
+        [Parameter(Mandatory = $true)]
+        [bool]$EnableDevMode
     )
 
-    # To start custom levels, we need developer mode.
-    $keyName = "Start mode"
-    $desiredValue = 2
+    # Determine the registry paths based on the selected index
+    switch ($selectedIndex) {
+        0 { $registryPaths = @("HKLM:\SOFTWARE\LucasArts Entertainment Company LLC\Indiana Jones and the Infernal Machine\v1.0") }
+        1 {
+            $registryPaths = @(
+                "HKLM:\SOFTWARE\LucasArts Entertainment Company LLC\Indiana Jones and the Infernal Machine\v1.0",
+                "HKCU:\SOFTWARE\Classes\VirtualStore\MACHINE\SOFTWARE\WOW6432Node\LucasArts Entertainment Company LLC\Indiana Jones and the Infernal Machine\v1.0"
+            )
+        }
+        2 { $registryPaths = @("HKLM:\SOFTWARE\WOW6432Node\LucasArts Entertainment Company LLC\Indiana Jones and the Infernal Machine\v1.0") }
+        3 { $registryPaths = @("HKCU:\SOFTWARE\LucasArts Entertainment Company LLC\Indiana Jones and the Infernal Machine\v1.0") }
+        default { return @("Invalid selection index.") }
+    }
 
-    # Check if the registry path exists
-    if (Test-Path $registryPath) {
-        # Check if the Start mode DWORD value exists
-        $startModeValue = Get-ItemProperty -Path $registryPath -Name $keyName -ErrorAction SilentlyContinue
-        if ($null -ne $startModeValue) {
-            # Check if the current value is different from desired value, then update it
-            if ($startModeValue.$keyName -ne $desiredValue) {
-                Set-ItemProperty -Path $registryPath -Name $keyName -Value $desiredValue
+    $results = @()
+    foreach ($registryPath in $registryPaths) {
+        $keyName = "Start mode"
+        $desiredValue = if ($EnableDevMode) { 2 } else { 0 }
+
+        # Check if the registry path exists
+        if (Test-Path -Path $registryPath) {
+            try {
+                # Get all properties of the registry key
+                $keyProperties = Get-ItemProperty -Path $registryPath
+
+                # Check if "Start mode" property exists and its value matches the desired value
+                if ($keyProperties.PSObject.Properties.Name -contains $keyName) {
+                    $currentValue = $keyProperties.$keyName
+                    if ($currentValue -ne $desiredValue) {
+                        Set-ItemProperty -Path $registryPath -Name $keyName -Value $desiredValue
+                        $results += "The reg key existed and the DWORD had its value changed for $registryPath."
+                    }
+                    else {
+                        $results += "The reg key existed and the DWORD was the right value for $registryPath."
+                    }
+                }
+                else {
+                    New-ItemProperty -Path $registryPath -Name $keyName -Value $desiredValue -PropertyType DWORD
+                    $results += "The reg key existed and the DWORD was created for $registryPath."
+                }
+            }
+            catch {
+                $results += "Error accessing or modifying registry key: $registryPath."
             }
         }
+        else {
+            $results += "The reg key doesn't exist so the DWORD wasn't created for $registryPath."
+        }
     }
+
+    return $results
 }
 
 # Let's show a form on screen.
@@ -74,7 +113,7 @@ if (!(New-Object System.Security.Principal.WindowsPrincipal([System.Security.Pri
     exit
 }
 
-# Create the form
+# Create the form to show on screen.
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "Indiana Jones and the Infernal Machine - Mod patcher"
 $form.Size = New-Object System.Drawing.Size(1000, 1000)
@@ -83,6 +122,9 @@ $form.StartPosition = "CenterScreen"
 # Let's create column styles.
 $columnStyle1_location = New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 90)
 $columnStyle2_location = New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 10)
+$columnStyle1_RegKey = New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 33)
+$columnStyle2_RegKey = New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 33)
+$columnStyle3_RegKey = New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 33)
 
 # Create the TableLayoutPanel, so that it's better visually and I don't have to guess their location.
 $tableLayoutPanel = New-Object System.Windows.Forms.TableLayoutPanel
@@ -103,6 +145,7 @@ $tableLayoutPanelLocation = New-Object System.Windows.Forms.TableLayoutPanel
 $tableLayoutPanelLocation.Dock = [System.Windows.Forms.DockStyle]::Fill
 $tableLayoutPanelLocation.RowCount = 1
 $tableLayoutPanelLocation.ColumnCount = 2
+$tableLayoutPanelLocation.Height = 30
 $tableLayoutPanelLocation.ColumnStyles.Add($columnStyle1_location)
 $tableLayoutPanelLocation.ColumnStyles.Add($columnStyle2_location)
 $tableLayoutPanel.Controls.Add($tableLayoutPanelLocation)
@@ -115,7 +158,7 @@ $tableLayoutPanelLocation.Controls.Add($textBox_location)
 
 # Create a button for the user to locate the resources folder
 $button_location = New-Object System.Windows.Forms.Button
-$button_location.Text = "Search"
+$button_location.Text = "Browse"
 $button_location.AutoSize = $true
 $button_location.Cursor = [System.Windows.Forms.Cursors]::Hand
 $tableLayoutPanelLocation.Controls.Add($button_location)
@@ -131,6 +174,7 @@ $button_location.Add_Click({
         }
     })
 
+
 # Create a label for the tools location
 $label_regkey = New-Object System.Windows.Forms.Label
 $label_regkey.Text = "Select the version you want to patch:"
@@ -139,7 +183,18 @@ $label_regkey.Dock = [System.Windows.Forms.DockStyle]::Fill
 $label_regkey.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
 $tableLayoutPanel.Controls.Add($label_regkey)
 
-# TODO: implement a feature to only to the dev mode and to revert the dev mode.
+# Implementing a feature to only patch the registry so you can enable/disable dev mode.
+# Most likely, only one column style is needed, but to make the code a bit more human understandable, I choose to add all three.
+$tableLayoutPanelRegKey = New-Object System.Windows.Forms.TableLayoutPanel
+$tableLayoutPanelRegKey.Dock = [System.Windows.Forms.DockStyle]::Fill
+$tableLayoutPanelRegKey.RowCount = 1
+$tableLayoutPanelRegKey.ColumnCount = 3
+$tableLayoutPanelRegKey.Height = 30
+$tableLayoutPanelRegKey.ColumnStyles.Add($columnStyle1_RegKey)
+$tableLayoutPanelRegKey.ColumnStyles.Add($columnStyle2_RegKey)
+$tableLayoutPanelRegKey.ColumnStyles.Add($columnStyle3_RegKey)
+$tableLayoutPanel.Controls.Add($tableLayoutPanelRegKey)
+
 # Create a ComboBox (dropdown box) so the reg key is easier to find later.
 $comboBox = New-Object System.Windows.Forms.ComboBox
 $comboBox.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
@@ -147,25 +202,65 @@ $comboBox.Items.AddRange(@("Install via original CD's", "Copied files from origi
 $comboBox.SelectedIndex = 2  # Set default selection
 $comboBox.AutoSize = $true
 $comboBox.Dock = [System.Windows.Forms.DockStyle]::Fill
-$tableLayoutPanel.Controls.Add($comboBox)
+$tableLayoutPanelRegKey.Controls.Add($comboBox)
 
 # Create a button to start the patching proceess
-$button = New-Object System.Windows.Forms.Button
-$button.Text = "Patch"
-$button.Dock = [System.Windows.Forms.DockStyle]::Fill
-$button.Cursor = [System.Windows.Forms.Cursors]::Hand
-$tableLayoutPanel.Controls.Add($button)
+$button_enable_dev = New-Object System.Windows.Forms.Button
+$button_enable_dev.Text = "Enable dev mode"
+$button_enable_dev.Dock = [System.Windows.Forms.DockStyle]::Fill
+$button_enable_dev.Cursor = [System.Windows.Forms.Cursors]::Hand
+$tableLayoutPanelRegKey.Controls.Add($button_enable_dev)
 
-# Create a text box for logs
-$logBox = New-Object System.Windows.Forms.TextBox
-$logBox.Multiline = $true
-$logBox.ReadOnly = $true
-$logBox.ScrollBars = [System.Windows.Forms.ScrollBars]::Vertical
-$logBox.Dock = [System.Windows.Forms.DockStyle]::Fill
-$tableLayoutPanel.Controls.Add($logBox)
+$button_enable_dev.Add_Click({
+        $result = [System.Windows.Forms.MessageBox]::Show("This will patch the registry so the dev mode is enabled.", "Indiana Jones and the Infernal Machine - Mod Patcher", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+        if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+            # Now we are going to do the reg edit fix.
+            $selectedIndex = $comboBox.SelectedIndex
+            $enableDevMode = $true
+
+            # Call the function and store the return messages
+            $returnMessages = Update-RegistryStartMode -selectedIndex $selectedIndex -EnableDevMode $enableDevMode
+
+            # Display the return messages to the user
+            foreach ($message in $returnMessages) {
+                $logBox.AppendText("$message`n")
+            }
+        }
+    })
+
+# Create a button to start the patching proceess
+$button_disable_dev = New-Object System.Windows.Forms.Button
+$button_disable_dev.Text = "Disable dev mode"
+$button_disable_dev.Dock = [System.Windows.Forms.DockStyle]::Fill
+$button_disable_dev.Cursor = [System.Windows.Forms.Cursors]::Hand
+$tableLayoutPanelRegKey.Controls.Add($button_disable_dev)
+
+$button_disable_dev.Add_Click({
+        $result = [System.Windows.Forms.MessageBox]::Show("This will patch the registry so the dev mode is disabled.", "Indiana Jones and the Infernal Machine - Mod Patcher", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+        if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+            # Now we are going to do the reg edit fix.
+            $selectedIndex = $comboBox.SelectedIndex
+            $enableDevMode = $false
+
+            # Call the function and store the return messages
+            $returnMessages = Update-RegistryStartMode -selectedIndex $selectedIndex -EnableDevMode $enableDevMode
+
+            # Display the return messages to the user
+            foreach ($message in $returnMessages) {
+                $logBox.AppendText("$message`n")
+            }
+        }
+    })
+
+# Create a button to start the patching proceess
+$button_patch = New-Object System.Windows.Forms.Button
+$button_patch.Text = "Patch"
+$button_patch.Dock = [System.Windows.Forms.DockStyle]::Fill
+$button_patch.Cursor = [System.Windows.Forms.Cursors]::Hand
+$tableLayoutPanel.Controls.Add($button_patch)
 
 # Add button click event
-$button.Add_Click({
+$button_patch.Add_Click({
         # TODO: implement when return, to unlock the inputs. So, it's time for a boolean variable. Phft, refactoring :/
 
         $result = [System.Windows.Forms.MessageBox]::Show("This will start the patching process with the selected values. Are you certain? If something goes wrong, you'll have to restart the tool.", "Indiana Jones and the Infernal Machine - Mod Patcher", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
@@ -173,7 +268,7 @@ $button.Add_Click({
             $textBox_location.Enabled = $false
             $button_location.Enabled = $false
             $comboBox.Enabled = $false
-            $button.Enabled = $false
+            $button_patch.Enabled = $false
 
             if ($textBox_location.Text) {
                 $location_checker = Join-Path -Path $textBox_location.Text -ChildPath "\Indy3D.exe"
@@ -192,18 +287,14 @@ $button.Add_Click({
 
             # Let's download the working version of the tools. I'm going to hardcode v0.10.1 here for now, since if Kovic's PR (https://github.com/smlu/Urgon/pull/11) ever gets merged,
             # later logic will need to change.
-            $Temp_Path = "C:\IndyPatcher_Temp"
-            $Tools_Temp_Path = "C:\IndyPatcher_Temp\urgon-windows-x86-64.zip"
-            if (!(Test-Path -Path $Temp_Path)) {
-                New-Item -Path $Temp_Path -Type Directory
-            }
+            $Tools_Temp_Path = $textBox_location.Text + "\urgon-windows-x86-64.zip"
 
             try {
                 Invoke-WebRequest -Uri https://github.com/smlu/Urgon/releases/download/v0.10.1/urgon-windows-x86-64.zip -OutFile $Tools_Temp_Path
                 $logBox.AppendText("Success: Tools v0.10.1 succesfully downloaded.`n")
             }
             catch {
-                $logBox.AppendText("Error: Tools couldn't be downloaded. $($_.Exception.Message). Stopping pathing procedure.`n")
+                $logBox.AppendText("Error: Tools couldn't be downloaded. $_ . Stopping pathing procedure.`n")
                 return
             }
 
@@ -212,13 +303,8 @@ $button.Add_Click({
                 $logBox.AppendText("Success: Tools v0.10.1 succesfully extracted from zip file and placed in resource folder.`n")
             }
             catch {
-                $logBox.AppendText("Error: Tools couldn't be extracted and moved. $($_.Exception.Message). Stopping pathing procedure.`n")
+                $logBox.AppendText("Error: Tools couldn't be extracted and moved. $_ . Stopping pathing procedure.`n")
                 return
-            }
-
-            # Now we don't need that temp path anymore.
-            if (Test-Path -Path $Temp_Path) {
-                Remove-Item -Path $Temp_Path -Recurse -Force
             }
 
             # Let's go to that resource folder.
@@ -573,9 +659,8 @@ $button.Add_Click({
 
             $logBox.AppendText("Success: Moved all extracted folders to the root resources folder.`n")
 
-            $CNDToRemoveFolders = @($cnd_folder_extract_lvl01, $cnd_folder_extract_lvl02, $cnd_folder_extract_lvl03, $cnd_folder_extract_lvl04, $cnd_folder_extract_lvl05, $cnd_folder_extract_lvl06, $cnd_folder_extract_lvl07, $cnd_folder_extract_lvl08, $cnd_folder_extract_lvl09, $cnd_folder_extract_lvl10, $cnd_folder_extract_lvl11, $cnd_folder_extract_lvl12, $cnd_folder_extract_lvl13, $cnd_folder_extract_lvl14, $cnd_folder_extract_lvl15, $cnd_folder_extract_lvl16, $cnd_folder_extract_lvl17, $cnd_folder_extract_lvl18)
-
             # Let's remove the extraction folders.
+            $CNDToRemoveFolders = @($cnd_folder_extract_lvl01, $cnd_folder_extract_lvl02, $cnd_folder_extract_lvl03, $cnd_folder_extract_lvl04, $cnd_folder_extract_lvl05, $cnd_folder_extract_lvl06, $cnd_folder_extract_lvl07, $cnd_folder_extract_lvl08, $cnd_folder_extract_lvl09, $cnd_folder_extract_lvl10, $cnd_folder_extract_lvl11, $cnd_folder_extract_lvl12, $cnd_folder_extract_lvl13, $cnd_folder_extract_lvl14, $cnd_folder_extract_lvl15, $cnd_folder_extract_lvl16, $cnd_folder_extract_lvl17, $cnd_folder_extract_lvl18)
             foreach ($CNDToRemoveFolder in $CNDToRemoveFolders) {
                 if (Test-Path -Path $CNDToRemoveFolder) {
                     Remove-Item -Path $CNDToRemoveFolder -Recurse -Force
@@ -592,41 +677,33 @@ $button.Add_Click({
                 $logBox.AppendText("Success: the move of the key folder was successful.`n")
             }
             catch {
-                $logBox.AppendText("Error: failure in moving the key folder. $($_.Exception.Message). Stopping the patching.`n")
+                $logBox.AppendText("Error: failure in moving the key folder. $_ . Stopping the patching.`n")
                 return
             }
 
             # Now we are going to do the reg edit fix.
-            if ($comboBox.SelectedIndex -eq 0) {
-                # CD version was selected
-                $selectedKey = "HKEY_LOCAL_MACHINE\Software\LucasArts Entertainment Company LLC\Indiana Jones and the Infernal Machine\v1.0"
-                Update-RegistryStartMode -registryPath $selectedKey
-                $logBox.AppendText("Success: enabled the dev mode.`n")
-            }
-            elseif ($comboBox.SelectedIndex -eq 1) {
-                # Copied from CD was selected
-                $selectedKey = "HKEY_LOCAL_MACHINE\Software\LucasArts Entertainment Company LLC\Indiana Jones and the Infernal Machine\v1.0"
-                $selectedKeyVirtual = "HKEY_CURRENT_USER\SOFTWARE\Classes\VirtualStore\MACHINE\SOFTWARE\WOW6432Node\LucasArts Entertainment Company LLC\Indiana Jones and the Infernal Machine\v1.0"
-                Update-RegistryStartMode -registryPath $selectedKey
-                Update-RegistryStartMode -registryPath $selectedKeyVirtual
-                $logBox.AppendText("Success: enabled the dev mode.`n")
-            }
-            elseif ($comboBox.SelectedIndex -eq 2) {
-                # Steam version was selected.
-                $selectedKey = "HKEY_CURRENT_USER\SOFTWARE\LucasArts Entertainment Company LLC\Indiana Jones and the Infernal Machine\v1.0"
-                Update-RegistryStartMode -registryPath $selectedKey
-                $logBox.AppendText("Success: enabled the dev mode.`n")
-            }
-            elseif ($comboBox.SelectedIndex -eq 3) {
-                # GOG version was selected.
-                $selectedKey = "HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\LucasArts Entertainment Company LLC\Indiana Jones and the Infernal Machine"
-                Update-RegistryStartMode -registryPath $selectedKey
-                $logBox.AppendText("Success: enabled the dev mode.`n")
+            $selectedIndex = $comboBox.SelectedIndex
+            $enableDevMode = $true
+
+            # Call the function and store the return messages
+            $returnMessages = Update-RegistryStartMode -selectedIndex $selectedIndex -EnableDevMode $enableDevMode
+
+            # Display the return messages to the user
+            foreach ($message in $returnMessages) {
+                $logBox.AppendText("$message`n")
             }
 
             $logBox.AppendText("Success: patching was successful.`n")
         }
     })
+
+# Create a text box for logs
+$logBox = New-Object System.Windows.Forms.TextBox
+$logBox.Multiline = $true
+$logBox.ReadOnly = $true
+$logBox.ScrollBars = [System.Windows.Forms.ScrollBars]::Vertical
+$logBox.Dock = [System.Windows.Forms.DockStyle]::Fill
+$tableLayoutPanel.Controls.Add($logBox)
 
 # Add the TableLayoutPanel to the form
 $form.Controls.Add($tableLayoutPanel)
