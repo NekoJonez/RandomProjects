@@ -2,6 +2,7 @@
 
 <p>For this tool, you need a <b>clean</b> install of the game. This script can't fully handle partially modded games yet, but I might improve the script for that in the future.</p> <br>
 <p>At the moment, this tool requires an active internet connection to install. I might write an offline version maybe later.</p>
+<p>Admin rights are needed for this tool because to start custom levels, there is one reg key that needs to change. In a future version I'm going to write a version that doesn't patch the registry if you run this without admin permissions but preps the game just fine.</p>
 
 <h1>Steps to use:</h1>
 
