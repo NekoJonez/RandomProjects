@@ -1,0 +1,21 @@
+Version history patcher
+
+v1.1 - 17/07/2024
+
+* New: Added a feature to enable/disable dev mode.
+* New: Implemented an undo button for the patching.
+* Improved: Changed the browse button from "Search" to "Browse"
+* Improved: The tools are downloaded to the resource folder right away instead of in a temp folder and later removed.
+* Improved: Wrote the code a bit cleaner to show error messages in the tools downloading part.
+* Improved: The function to handle the registry edit has been improved by a lot.
+	- It recognises it the DWORD doesn't exist and will create it.
+	- The feedback messages returned are a lot more clear.
+	- The code is written a lot cleaner to make it easier to implement new features in the future.
+* Improved: Made sure that the cog folder gets a backup before we move the extracted cog files to the location.
+* Improved: After a successful patching, the buttons will be enabled again.
+* Code: Did some minor re-ordering of the script to make it more readable.
+* Code: Minor improvements to some comments to explain more what's going on.
+* Code: Renamed a variable to make it more clear what it does.
+* Fixed: The registry edit could fail in some cases.	
+* Fixed: Removed the unneeded white space between the file input field and reg selection.
+ 

@@ -1,7 +1,7 @@
 # NekoJonez presents Indiana Jones and the Infernal Machine - Automatic Patcher for custom levels.
 # Based upon the work & tools by the modders over at https://github.com/Jones3D-The-Infernal-Engine/Mods/tree/main/levels/sed
 # Written in PowerShell core 7.4.3. Will work with PowerShell 5.1 & 7+.
-# Build 1.1 RC1 - 17/07/2024
+# Build 1.1 - 17/07/2024
 # Visit my gaming blog: https://arpegi.wordpress.com
 
 # Function to move files while skipping existing files
@@ -67,7 +67,7 @@ function Update-RegistryStartMode {
 
     $results = @()
     foreach ($registryPath in $registryPaths) {
-        $keyName = "Start mode"
+        $keyName = "Start Mode"
         $desiredValue = if ($EnableDevMode) { 2 } else { 0 }
 
         # Check if the registry path exists
@@ -128,7 +128,7 @@ $columnStyle3_RegKey = New-Object System.Windows.Forms.ColumnStyle([System.Windo
 
 # Create the TableLayoutPanel, so that it's better visually and I don't have to guess their location.
 $tableLayoutPanel = New-Object System.Windows.Forms.TableLayoutPanel
-$tableLayoutPanel.RowCount = 6
+$tableLayoutPanel.RowCount = 7
 $tableLayoutPanel.ColumnCount = 1
 $tableLayoutPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
 
@@ -268,7 +268,10 @@ $button_patch.Add_Click({
             $textBox_location.Enabled = $false
             $button_location.Enabled = $false
             $comboBox.Enabled = $false
+            $button_enable_dev.Enabled = $false
+            $button_disable_dev.Enabled = $false
             $button_patch.Enabled = $false
+            $button_unpatch.Enabled = $false
 
             if ($textBox_location.Text) {
                 $location_checker = Join-Path -Path $textBox_location.Text -ChildPath "\Indy3D.exe"
@@ -364,13 +367,27 @@ $button_patch.Add_Click({
             $cd1_and_2_subfolders = @("3do", "cog", "hi3do", "mat", "misc", "ndy")
             $jones3d_subfolders = @("3do", "cog", "mat", "misc", "ndy")
 
+            $cog_folder = Join-Path $textbox_location.text -ChildPath "\Cog"
+            if (Test-Path -Path $cog_folder -PathType Container) {
+                # Get the new folder name with "_backup"
+                $newFolderName = [System.IO.Path]::GetFileName($folderPath) + "_backup"
+                $newFolderPath = [System.IO.Path]::Combine([System.IO.Path]::GetDirectoryName($cog_folder), $newFolderName)
+
+                # Copy the original folder to a new _backup folder location
+                Copy-Item -Path $cog_folder -Destination $newFolderPath -Recurse -Force
+                $logBox.AppendText("Success: Made a backup of the original COG folder and named it Cog_backup.`n")
+            }
+            else {
+                $logBox.AppendText("Warning: The original COG folder wasn't found. This could result in game issues.`n")
+            }
+
             # Call the function for each source parent folder with respective subfolders
             MoveFilesAndRemoveSource -sourcePath $cd1_gob_location -destinationPath $destinationPath -subfolders $cd1_and_2_subfolders
             MoveFilesAndRemoveSource -sourcePath $cd2_gob_location -destinationPath $destinationPath -subfolders $cd1_and_2_subfolders
             MoveFilesAndRemoveSource -sourcePath $jones3d_gob_location -destinationPath $destinationPath -subfolders $jones3d_subfolders
 
             # Now, let's remove the GOB files. Since, it's going to work :-)
-            $filePathsToRemove = @($gob_extract_cd1, $gob_extract_cd2, $gob_extract_jones3d)
+            $filePathsToRename = @($gob_extract_cd1, $gob_extract_cd2, $gob_extract_jones3d)
             $filePathsToRemoveFolders = @($cd1_gob_location, $cd2_gob_location, $jones3d_gob_location)
 
             # Let's remove the extraction folders.
@@ -381,16 +398,16 @@ $button_patch.Add_Click({
             }
 
             # Rename files using foreach loop, after this step 2 is done.
-            foreach ($filePathToRemove in $filePathsToRemove) {
+            foreach ($filePathToRename in $filePathsToRename) {
                 if (Test-Path -Path $filePathToRemove) {
-                    $fileDirectory = [System.IO.Path]::GetDirectoryName($filePathToRemove)
-                    $fileName = [System.IO.Path]::GetFileNameWithoutExtension($filePathToRemove)
-                    $fileExtension = [System.IO.Path]::GetExtension($filePathToRemove)
+                    $fileDirectory = [System.IO.Path]::GetDirectoryName($filePathToRename)
+                    $fileName = [System.IO.Path]::GetFileNameWithoutExtension($filePathToRename)
+                    $fileExtension = [System.IO.Path]::GetExtension($filePathToRename)
 
                     $newFileName = "$fileName`_backup$fileExtension"
                     $newFilePath = [System.IO.Path]::Combine($fileDirectory, $newFileName)
 
-                    Rename-Item -Path $filePathToRemove -NewName $newFilePath -Force
+                    Rename-Item -Path $filePathToRename -NewName $newFilePath -Force
                 }
             }
 
@@ -678,6 +695,13 @@ $button_patch.Add_Click({
             }
             catch {
                 $logBox.AppendText("Error: failure in moving the key folder. $_ . Stopping the patching.`n")
+                $textBox_location.Enabled = $true
+                $button_location.Enabled = $true
+                $comboBox.Enabled = $true
+                $button_enable_dev.Enabled = $true
+                $button_disable_dev.Enabled = $true
+                $button_patch.Enabled = $true
+                $button_unpatch.Enabled = $true
                 return
             }
 
@@ -694,6 +718,127 @@ $button_patch.Add_Click({
             }
 
             $logBox.AppendText("Success: patching was successful.`n")
+            $textBox_location.Enabled = $true
+            $button_location.Enabled = $true
+            $comboBox.Enabled = $true
+            $button_enable_dev.Enabled = $true
+            $button_disable_dev.Enabled = $true
+            $button_patch.Enabled = $true
+            $button_unpatch.Enabled = $true
+        }
+    })
+
+# Create a button to undo the patch process
+$button_unpatch = New-Object System.Windows.Forms.Button
+$button_unpatch.Text = "Undo patch"
+$button_unpatch.Dock = [System.Windows.Forms.DockStyle]::Fill
+$button_unpatch.Cursor = [System.Windows.Forms.Cursors]::Hand
+$tableLayoutPanel.Controls.Add($button_unpatch)
+
+$button_unpatch.Add_Click({
+        $result = [System.Windows.Forms.MessageBox]::Show("This will undo the patching of the game done by this script. It will undo changes in the resource folder & the registry. Be sure the the following information is correct: the path to the resource folder and the selected version for the registry. Are you certain?", "Indiana Jones and the Infernal Machine - Mod Patcher", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+        if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+            $textBox_location.Enabled = $false
+            $button_location.Enabled = $false
+            $comboBox.Enabled = $false
+            $button_enable_dev.Enabled = $false
+            $button_disable_dev.Enabled = $false
+            $button_patch.Enabled = $false
+            $button_unpatch.Enabled = $false
+
+            # Let's undo the renaming of the GOB files.
+            $gob_backup_extract_cd1 = Join-Path $textBox_location.Text -ChildPath "\CD1_backup.gob"
+            $gob_backup_extract_cd2 = Join-Path $textBox_location.Text -ChildPath "\CD2_backup.gob"
+            $gob_backup_extract_jones3d = Join-Path $textBox_location.Text -ChildPath "\JONES3D_backup.gob"
+            $fileBackupPathsToRename = @($gob_backup_extract_cd1, $gob_backup_extract_cd2, $gob_backup_extract_jones3d)
+
+            foreach ($fileBackupPathToRename in $fileBackupPathsToRename) {
+                if (Test-Path -Path $fileBackupPathToRename) {
+                    $fileDirectory = [System.IO.Path]::GetDirectoryName($fileBackupPathToRename)
+                    $fileName = [System.IO.Path]::GetFileNameWithoutExtension($fileBackupPathToRename)
+                    $fileExtension = [System.IO.Path]::GetExtension($fileBackupPathToRename)
+
+                    # Check if the filename ends with "_backup"
+                    if ($fileName.EndsWith("_backup")) {
+                        # Remove "_backup" from the filename
+                        $newFileName = $fileName.Substring(0, $fileName.Length - 7) + $fileExtension
+                        $newFilePath = [System.IO.Path]::Combine($fileDirectory, $newFileName)
+
+                        Rename-Item -Path $fileBackupPathToRename -NewName $newFilePath -Force
+                    }
+                }
+                else {
+                    $logBox.AppendText("Failure: The GOB file $($fileBackupPathToRename) doesn't exist. Can't complete the process. Exit.`n")
+                    $textBox_location.Enabled = $true
+                    $button_location.Enabled = $true
+                    $comboBox.Enabled = $true
+                    $button_enable_dev.Enabled = $true
+                    $button_disable_dev.Enabled = $true
+                    $button_patch.Enabled = $true
+                    $button_unpatch.Enabled = $true
+                    return
+                }
+            }
+
+            $logBox.AppendText("Success: reverted the backup GOB files to it's original state.`n")
+
+            $cog_backup_folder = Join-Path $textbox_location.text -ChildPath "\Cog_backup"
+            $cog_mod_folder = Join-Path $textbox_location.text -ChildPath "\Cog"
+            if (Test-Path -Path $cog_backup_folder -PathType Container) {
+                Remove-Item -Path $cog_mod_folder -Recurse -Force
+                Rename-Item -Path $cog_backup_folder -NewName "Cog" -Force
+                $logBox.AppendText("Success: Reverted the backup Cog folder to it's original state.`n")
+            }
+            else {
+                $logBox.AppendText("Warning: The original COG folder wasn't found. This could result in game issues.`n")
+            }
+
+            $3do_mod_folder = Join-Path -Path $textBox_location.Text -ChildPath "\3do"
+            $hi3do_mod_folder = Join-Path -Path $textBox_location.Text -ChildPath "\hi3do"
+            $mat_mod_folder = Join-Path -Path $textBox_location.Text -ChildPath "\mat"
+            $misc_mod_folder = Join-Path -Path $textBox_location.Text -ChildPath "\misc"
+            $ndy_mod_folder = Join-Path -Path $textBox_location.Text -ChildPath "\ndy"
+            $sound_mod_folder = Join-Path -Path $textBox_location.Text -ChildPath "\sound"
+            $ModFoldersToRemove = @($3do_mod_folder, $hi3do_mod_folder, $mat_mod_folder, $misc_mod_folder, $ndy_mod_folder, $sound_mod_folder)
+            foreach ($ModFolderToRemove in $ModFoldersToRemove) {
+                if (Test-Path -Path $ModFolderToRemove) {
+                    Remove-Item -Path $ModFolderToRemove -Recurse -Force
+                }
+            }
+
+            $logBox.AppendText("Success: Removed all mod extracted folders.`n")
+
+            $gobext_tool = Join-Path $textBox_location.Text -ChildPath "gobext.exe"
+            $ma_tool = Join-Path $textBox_location.Text -ChildPath "matool.exe"
+            $Tools_Temp_Path = $textBox_location.Text + "\urgon-windows-x86-64.zip"
+            $ToolsToClean = @($gobext_tool, $ma_tool, $Tools_Temp_Path)
+            foreach ($ToolToClean in $ToolsToClean) {
+                if (Test-Path -Path $ToolToClean) {
+                    Remove-Item -Path $ToolToClean -Recurse -Force
+                }
+            }
+
+            # Now we are going to do the reg edit fix.
+            $selectedIndex = $comboBox.SelectedIndex
+            $enableDevMode = $false
+
+            # Call the function and store the return messages
+            $returnMessages = Update-RegistryStartMode -selectedIndex $selectedIndex -EnableDevMode $enableDevMode
+
+            # Display the return messages to the user
+            foreach ($message in $returnMessages) {
+                $logBox.AppendText("$message`n")
+            }
+
+            $logBox.AppendText("Success: Finished undoing the patch.`n")
+
+            $textBox_location.Enabled = $true
+            $button_location.Enabled = $true
+            $comboBox.Enabled = $true
+            $button_enable_dev.Enabled = $true
+            $button_disable_dev.Enabled = $true
+            $button_patch.Enabled = $true
+            $button_unpatch.Enabled = $true
         }
     })
 
