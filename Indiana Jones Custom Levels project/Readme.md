@@ -44,8 +44,6 @@ Click on the green play icon to start the script.
 
 ![image](https://github.com/user-attachments/assets/40d923f3-8661-4815-87b4-1cc2f61809d7)
 
-*Note:* If you haven't opened your editor or Powershell ISE with administrator permissions, it will exit out before you even see the tool. It'll show an error message. To play certain mods/custom levels a reg key needs to be edited and that isn't possible without administrator permissions. 
-<br>
 Enter in the text field your exact location of the Resource folder of your Indiana Jones and the Infernal Machine installation. This is a path as an example: `D:\SteamLibrary\steamapps\common\Indiana Jones and the Infernal Machine\Resource`. You can also choose to use the "Search" button to browse to the folder. A final slash at the end is not needed and will break the script.<br>
 <p>In the dropdown underneath, select the version that install is. Depending if you have the game on Steam, GOG or used the original discs, the registry key required to patch is different. Please select the correct version. If you have already set the registry key to it's correct value, the script will skip this step :)</p><br>
 
