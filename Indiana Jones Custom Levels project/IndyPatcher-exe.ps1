@@ -1,3 +1,36 @@
+﻿##[Ps1 To Exe]
+##
+##Kd3HDZOFADWE8uO1
+##Nc3NCtDXTlaDjofG5iZk2U/rTG0yUuGeqr2zy5GA1uTosiTXSNo+RlpyhWnfEVipVv9SefADsd0CFQ04IPgO4absHv+sTKEFnK12aOru
+##Kd3HFJGZHWLWoLaVvnQnhQ==
+##LM/RF4eFHHGZ7/K1
+##K8rLFtDXTiW5
+##OsHQCZGeTiiZ4NI=
+##OcrLFtDXTiW5
+##LM/BD5WYTiiZ4tI=
+##McvWDJ+OTiiZ4tI=
+##OMvOC56PFnzN8u+Vs1Q=
+##M9jHFoeYB2Hc8u+Vs1Q=
+##PdrWFpmIG2HcofKIo2QX
+##OMfRFJyLFzWE8uK1
+##KsfMAp/KUzWI0g==
+##OsfOAYaPHGbQvbyVvnQmqxmO
+##LNzNAIWJGmPcoKHc7Do3uAu/DDpL
+##LNzNAIWJGnvYv7eVvnRe60/nQ2YqLu+Ut7O0hICy+6r4syCZYJQSTEZ5lyW8KUq+UfscULVY9PweUV0aLuYI6rfCew==
+##M9zLA5mED3nfu77Q7TV64AuzAgg=
+##NcDWAYKED3nfu77Q7TV64AuzAgg=
+##OMvRB4KDHmHQvbyVvnRD7UL9AmE4LsTbrbmoyMGo8Kr8qSDJCYMbXEY3nyfvEEqxVbIdU7U8utUYVBMrb9gE7LfDW+anQeIemuY/QuuIo6AnFFaYzpL32xCcyt3UEUxwQ1K/Ya1bBmvU1iHeXn6OhokpiWajV8Lyyw==
+##P8HPFJGEFzWE8pzQ6Dtd6kXrWAg=
+##KNzDAJWHD2fS8u+Vgw==
+##P8HSHYKDCX3N8u+Vgw==
+##LNzLEpGeC3fMu77Ro2k3hQ==
+##L97HB5mLAnfMu77Ro2k3hQ==
+##P8HPCZWEGmaZ7/K1
+##L8/UAdDXTlaDjofG5iZk2U/rTG0yUuGeqr2zy5GA1uTosiTXSNo+RlpyhWnfEVipVv9SefADsd0CFQ04IPgO4absMumtXJILhuB3bvfAo6osdQ==
+##Kc/BRM3KXxU=
+##
+##
+##fd6a9f26a06ea3bc99616d4851b372ba
 # NekoJonez presents Indiana Jones and the Infernal Machine - Automatic Patcher for custom levels.
 # Based upon the work & tools by the modders over at https://github.com/Jones3D-The-Infernal-Engine/Mods/tree/main/levels/sed
 # Written in PowerShell core 7.4.3. Will work with PowerShell 5.1 & 7+.

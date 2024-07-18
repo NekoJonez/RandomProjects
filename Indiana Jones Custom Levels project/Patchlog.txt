@@ -1,5 +1,16 @@
 Version history patcher
 
+v1.2 - 18/07/2024
+
+* New: Added an exit button.
+* New: Added a button to create a shortcut to the dev mode.
+* New: Added a credit label at the button of the tool.
+* New: Created an EXE version of the tool.
+* Improved: The patching will now also create a shortcut on your desktop to the dev mode.
+* Improved: The wording on some buttons is more clear.
+* Improved: Made the tool a bit smaller to avoid wasted space.
+* Code: Corrected some unchanged comments due to copy-pasting.
+
 v1.1 - 17/07/2024
 
 * New: Added a feature to enable/disable dev mode.
