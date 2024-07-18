@@ -4,7 +4,11 @@
 <p>At the moment, this tool requires an active internet connection to install. I might write an offline version maybe later.</p>
 <p>Admin rights are needed for this tool because to start custom levels, there is one reg key that needs to change. In a future version I'm going to write a version that doesn't patch the registry if you run this without admin permissions but preps the game just fine.</p>
 
-<h1>Steps to use:</h1>
+<h1>Steps to start - EXE file:</h1>
+
+<p>Download the EXE file and launch it with admin permissions. Don't mind the terminal window behind the tool, that's what I need for debugging if issues arise. If you notice errors in there, feel free to report them.</p>
+
+<h1>Steps to start - PS1 file:</h1>
 
 *Note: if you know how to use a code editor, you can use your own code editor like Visual Studio or VSCode instead of the tutorial here.*
 
@@ -34,19 +38,20 @@ Click on the green play icon to start the script.
 ![image](https://github.com/user-attachments/assets/e9aecdb1-54e0-47d4-a1f2-e2d78180631c)
 <br>
 
-<h3>Step 5</h3>
+<h1>How to use the tool</h1>
+
 <p>The tool will open now.</p>
 
-![image](https://github.com/user-attachments/assets/219bcebd-9939-4d73-bd8a-bdb04f238541)
+![image](https://github.com/user-attachments/assets/40d923f3-8661-4815-87b4-1cc2f61809d7)
 
-*Note:* If you haven't opened your editor or Powershell ISE with administrator permissions, it will exit out before you even see the tool. It'll show an error message. To play certain mods/custom levels a reg key needs to be edited and that isn't possible without administrator permissions.
+*Note:* If you haven't opened your editor or Powershell ISE with administrator permissions, it will exit out before you even see the tool. It'll show an error message. To play certain mods/custom levels a reg key needs to be edited and that isn't possible without administrator permissions. 
 <br>
 Enter in the text field your exact location of the Resource folder of your Indiana Jones and the Infernal Machine installation. This is a path as an example: `D:\SteamLibrary\steamapps\common\Indiana Jones and the Infernal Machine\Resource`. You can also choose to use the "Search" button to browse to the folder. A final slash at the end is not needed and will break the script.<br>
 <p>In the dropdown underneath, select the version that install is. Depending if you have the game on Steam, GOG or used the original discs, the registry key required to patch is different. Please select the correct version. If you have already set the registry key to it's correct value, the script will skip this step :)</p><br>
 
-<h3>Step 6</h3>
 <p>When all values are set, click on the "Patch" button and wait for the magic to happen. If all goes well, you'll have a "Success: patching was successful." appear at the end in the logbox underneath the Patch button. If something went wrong, it's best to remove the game and reinstall it. (Or in case of GOG/Steam, remove the resource folder and verify the game files.)</p> <br>
 <br>
+<p>Other features of the tool include an way to undo the patching, enable/disable dev mod and create a shortcut to the game for custom levels & content.</p>
 
 <h1>Issues/bugs/idea's?</h1>
 <p>If you encounter a problem, feel free to reach out to me. You can open a GitHub issue in this repo, ask me on Discord... The support will go as far as fixing issues with the patcher, not fixing issues caused by the patcher.</p>
