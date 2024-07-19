@@ -14,8 +14,8 @@
 ##PdrWFpmIG2HcofKIo2QX
 ##OMfRFJyLFzWE8uK1
 ##KsfMAp/KUzWI0g==
-##OsfOAYaPHGbQvbyVvnQmqxmO
-##LNzNAIWJGmPcoKHc7Do3uAu/DDpL
+##OsfOAYaPHGbQvbyVvnQmqxiO
+##LNzNAIWJGmPcoKHc7Do3uAu/DDtL
 ##LNzNAIWJGnvYv7eVvnRe60/nQ2YqLu+Ut7O0hICy+6r4syCZYJQSTEZ5lyW8KUq+UfscULVY9PweUV0aLuYI6rfCew==
 ##M9zLA5mED3nfu77Q7TV64AuzAgg=
 ##NcDWAYKED3nfu77Q7TV64AuzAgg=
@@ -34,7 +34,7 @@
 # NekoJonez presents Indiana Jones and the Infernal Machine - Automatic Patcher for custom levels.
 # Based upon the work & tools by the modders over at https://github.com/Jones3D-The-Infernal-Engine/Mods/tree/main/levels/sed
 # Written in PowerShell core 7.4.3. Will work with PowerShell 5.1 & 7+.
-# Build 1.2 - 18/07/2024
+# Build 1.3 - 19/07/2024
 # Visit my gaming blog: https://arpegi.wordpress.com
 
 # Function to move files while skipping existing files
@@ -160,18 +160,42 @@ function Create-Shortcut {
     }
 }
 
+# Function to load paths from the text file into the ComboBox
+function Load-Paths {
+    $textBox_location.Items.Clear()
+    if (Test-Path $textFilePath) {
+        Get-Content $textFilePath | ForEach-Object {
+            $textBox_location.Items.Add($_)
+        }
+    }
+}
+
+# Function to check and update the button text based on the input
+function Update-ButtonText {
+    $inputText = $textBox_location.Text
+    if ($textBox_location.Items.Contains($inputText)) {
+        $button_remember.Text = "Forget"
+    }
+    else {
+        $button_remember.Text = "Remember"
+    }
+}
+
 # Let's show a form on screen.
 Add-Type -AssemblyName System.Windows.Forms
 
+# This is the title.
+$title = "Indiana Jones and the Infernal Machine - Mod patcher"
+
 # Let's exit when we don't have admin permissions, since we need to have them to edit registry.
 if (!(New-Object System.Security.Principal.WindowsPrincipal([System.Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    [System.Windows.Forms.MessageBox]::Show("This script needs to be run as administrator. Since the patch needs to change a reg key, and you can't do that without admin permissions.", "Admin Rights Required", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+    [System.Windows.Forms.MessageBox]::Show("This script needs to be run as administrator. Since the patch needs to change a reg key, and you can't do that without admin permissions.", $title, [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     exit
 }
 
 # Create the form to show on screen.
 $form = New-Object System.Windows.Forms.Form
-$form.Text = "Indiana Jones and the Infernal Machine - Mod patcher"
+$form.Text = $title
 $form.Size = New-Object System.Drawing.Size(1000, 700)
 $form.StartPosition = "CenterScreen"
 
@@ -200,16 +224,17 @@ $tableLayoutPanel.Controls.Add($label_location)
 $tableLayoutPanelLocation = New-Object System.Windows.Forms.TableLayoutPanel
 $tableLayoutPanelLocation.Dock = [System.Windows.Forms.DockStyle]::Fill
 $tableLayoutPanelLocation.RowCount = 1
-$tableLayoutPanelLocation.ColumnCount = 2
+$tableLayoutPanelLocation.ColumnCount = 3
 $tableLayoutPanelLocation.Height = 30
 $tableLayoutPanelLocation.ColumnStyles.Add($columnStyle1_location)
 $tableLayoutPanelLocation.ColumnStyles.Add($columnStyle2_location)
 $tableLayoutPanel.Controls.Add($tableLayoutPanelLocation)
 
 # Create a text box for user input
-$textBox_location = New-Object System.Windows.Forms.TextBox
+$textBox_location = New-Object System.Windows.Forms.ComboBox
 $textBox_location.Dock = [System.Windows.Forms.DockStyle]::Fill
 $textBox_location.AutoSize = $true
+$textBox_location.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDown
 $tableLayoutPanelLocation.Controls.Add($textBox_location)
 
 # Create a button for the user to locate the resources folder
@@ -219,7 +244,7 @@ $button_location.AutoSize = $true
 $button_location.Cursor = [System.Windows.Forms.Cursors]::Hand
 $tableLayoutPanelLocation.Controls.Add($button_location)
 
-# Add the click event for the button
+# Add the click event for the browse button
 $button_location.Add_Click({
         $folderBrowser = New-Object System.Windows.Forms.FolderBrowserDialog
         $folderBrowser.Description = "Select the Indiana Jones and the Infernal Machine resource folder"
@@ -230,6 +255,84 @@ $button_location.Add_Click({
         }
     })
 
+# Create a button for the user to remember the resources folder
+$button_remember = New-Object System.Windows.Forms.Button
+$button_remember.Text = "Remember"
+$button_remember.AutoSize = $true
+$button_remember.Cursor = [System.Windows.Forms.Cursors]::Hand
+$tableLayoutPanelLocation.Controls.Add($button_remember)
+
+$textFilePath = "Indy3DPatcherPaths.txt"
+
+# Event handler for ComboBox selection
+$textBox_location.add_SelectedIndexChanged({
+        Update-ButtonText
+    })
+
+# Event handler for ComboBox text input
+$textBox_location.add_TextChanged({
+        Update-ButtonText
+    })
+
+# Add the click event for the remember button. Work with an elseif here, otherwise this stinker goes from remember mode directly into forget mode.
+$button_remember.Add_Click({
+        if ($button_remember.Text -eq "Remember") {
+            # Let's check first if we have a valid path.
+            if ([string]::IsNullOrWhiteSpace($textBox_location.Text)) {
+                [System.Windows.Forms.MessageBox]::Show("Please enter a location.", $title)
+            }
+            else {
+                $result = [System.Windows.Forms.MessageBox]::Show("Are you sure you want to remember this location?", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+                if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+                    $enteredPath = $textBox_location.Text
+
+                    # Read the existing paths from the text file
+                    $existingPaths = if (Test-Path $textFilePath) { Get-Content $textFilePath } else { @() }
+
+                    if ($existingPaths -contains $enteredPath) {
+                        [System.Windows.Forms.MessageBox]::Show("This location already exists.", $title)
+                    }
+                    else {
+                        try {
+                            Add-Content -Path $textFilePath -Value $enteredPath # Append the entered path to the text file
+                            Load-Paths # Reload paths into the ComboBox
+                            $button_remember.Text = "Forget" # Let's automagically set this to the forget mode.
+                            $logBox.AppendText("Success: Path $enteredPath is now added to the rememeber list.`n")
+                        }
+                        catch {
+                            [System.Windows.Forms.MessageBox]::Show("An error occurred: " + $_.Exception.Message, $title)
+                        }
+                    }
+                }
+            }
+        }
+        elseif ($button_remember.Text -eq "Forget") {
+            $result = [System.Windows.Forms.MessageBox]::Show("Are you sure you want to forget this location? This will only remove this location from the dropdown list in this tool.", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+            if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+                $selectedPath = $textBox_location.SelectedItem
+                if ($null -ne $selectedPath) {
+                    try {
+                        # Remove the selected path from the text file
+                        $existingPaths = Get-Content $textFilePath
+                        $updatedPaths = $existingPaths | Where-Object { $_ -ne $selectedPath }
+                        Set-Content -Path $textFilePath -Value $updatedPaths # Write the updated paths back to the file
+
+                        # Let's make sure the UI reacts correctly.
+                        $textBox_location.Text = ""
+                        Load-Paths # Reload paths into the ComboBox
+                        $logBox.AppendText("Success: Remembered path $selectedPath was removed from the list.`n")
+                        $button_remember.Text = "Remember"
+                    }
+                    catch {
+                        [System.Windows.Forms.MessageBox]::Show("An error occurred: " + $_.Exception.Message, $title)
+                    }
+                }
+            }
+        }
+    })
+
+# If the user has paths, let's load them.
+Load-Paths
 
 # Create a label for the registry key
 $label_regkey = New-Object System.Windows.Forms.Label
@@ -268,7 +371,7 @@ $button_enable_dev.Cursor = [System.Windows.Forms.Cursors]::Hand
 $tableLayoutPanelRegKey.Controls.Add($button_enable_dev)
 
 $button_enable_dev.Add_Click({
-        $result = [System.Windows.Forms.MessageBox]::Show("This will patch the registry so the dev mode is enabled. Are you want to sure you want to continue?", "Indiana Jones and the Infernal Machine - Mod Patcher", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+        $result = [System.Windows.Forms.MessageBox]::Show("This will patch the registry so the dev mode is enabled. Are you want to sure you want to continue?", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
             # Now we are going to do the reg edit fix.
             $selectedIndex = $comboBox.SelectedIndex
@@ -292,7 +395,7 @@ $button_disable_dev.Cursor = [System.Windows.Forms.Cursors]::Hand
 $tableLayoutPanelRegKey.Controls.Add($button_disable_dev)
 
 $button_disable_dev.Add_Click({
-        $result = [System.Windows.Forms.MessageBox]::Show("This will patch the registry so the dev mode is disabled. Are you sure you want to continue", "Indiana Jones and the Infernal Machine - Mod Patcher", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+        $result = [System.Windows.Forms.MessageBox]::Show("This will patch the registry so the dev mode is disabled. Are you sure you want to continue?", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
             # Now we are going to do the reg edit fix.
             $selectedIndex = $comboBox.SelectedIndex
@@ -319,10 +422,11 @@ $tableLayoutPanel.Controls.Add($button_patch)
 $button_patch.Add_Click({
         # TODO: implement when return, to unlock the inputs. So, it's time for a boolean variable. Phft, refactoring :/
 
-        $result = [System.Windows.Forms.MessageBox]::Show("This will start the patching process with the selected values. Are you certain? If something goes wrong, you'll have to restart the tool.", "Indiana Jones and the Infernal Machine - Mod Patcher", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+        $result = [System.Windows.Forms.MessageBox]::Show("This will start the patching process with the selected values. Are you certain? If something goes wrong, you'll have to restart the tool.", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
             $textBox_location.Enabled = $false
             $button_location.Enabled = $false
+            $button_remember.Enabled = $false
             $comboBox.Enabled = $false
             $button_enable_dev.Enabled = $false
             $button_disable_dev.Enabled = $false
@@ -760,6 +864,7 @@ $button_patch.Add_Click({
                 $button_disable_dev.Enabled = $true
                 $button_patch.Enabled = $true
                 $button_unpatch.Enabled = $true
+                $button_remember.Enabled = $true
                 return
             }
 
@@ -785,6 +890,7 @@ $button_patch.Add_Click({
             $logBox.AppendText("Success: patching was successful.`n")
             $textBox_location.Enabled = $true
             $button_location.Enabled = $true
+            $button_remember.Enabled = $true
             $comboBox.Enabled = $true
             $button_enable_dev.Enabled = $true
             $button_disable_dev.Enabled = $true
@@ -803,10 +909,11 @@ $button_unpatch.Cursor = [System.Windows.Forms.Cursors]::Hand
 $tableLayoutPanel.Controls.Add($button_unpatch)
 
 $button_unpatch.Add_Click({
-        $result = [System.Windows.Forms.MessageBox]::Show("This will undo the patching of the game done by this script. It will undo changes in the resource folder & the registry. Be sure the the following information is correct: the path to the resource folder and the selected version for the registry. Are you certain?", "Indiana Jones and the Infernal Machine - Mod Patcher", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+        $result = [System.Windows.Forms.MessageBox]::Show("This will undo the patching of the game done by this script. It will undo changes in the resource folder & the registry. Be sure the the following information is correct: the path to the resource folder and the selected version for the registry. Are you certain?", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
             $textBox_location.Enabled = $false
             $button_location.Enabled = $false
+            $button_remember.Enabled = $false
             $comboBox.Enabled = $false
             $button_enable_dev.Enabled = $false
             $button_disable_dev.Enabled = $false
@@ -905,6 +1012,7 @@ $button_unpatch.Add_Click({
 
             $textBox_location.Enabled = $true
             $button_location.Enabled = $true
+            $button_remember.Enabled = $true
             $comboBox.Enabled = $true
             $button_enable_dev.Enabled = $true
             $button_disable_dev.Enabled = $true
@@ -942,7 +1050,7 @@ $button_shortcut.Cursor = [System.Windows.Forms.Cursors]::Hand
 $tableLayoutBottomButtons.Controls.Add($button_shortcut)
 
 $button_shortcut.Add_Click({
-        $result = [System.Windows.Forms.MessageBox]::Show("Are you sure you want to create a shortcut to the game on your desktop? This shortcut will open in dev mode if you patched your game or you enabled dev mode. You will need to provide the path to your resource folder of the game install!", "Indiana Jones and the Infernal Machine - Mod Patcher", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+        $result = [System.Windows.Forms.MessageBox]::Show("Are you sure you want to create a shortcut to the game on your desktop? This shortcut will open in dev mode if you patched your game or you enabled dev mode. You will need to provide the path to your resource folder of the game install!", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
             # Let's create said shortcut.
             if ($null -eq $textBox_location.Text) {
@@ -975,7 +1083,7 @@ $button_exit.Cursor = [System.Windows.Forms.Cursors]::Hand
 $tableLayoutBottomButtons.Controls.Add($button_exit)
 
 $button_exit.Add_Click({
-        $result = [System.Windows.Forms.MessageBox]::Show("Are you sure you want to exit?", "Indiana Jones and the Infernal Machine - Mod Patcher", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+        $result = [System.Windows.Forms.MessageBox]::Show("Are you sure you want to exit?", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
             $form.Close()
         }
@@ -983,7 +1091,7 @@ $button_exit.Add_Click({
 
 # Create the credit label
 $label_credit = New-Object System.Windows.Forms.Label
-$label_credit.Text = "Indiana Jones and the Infernal Machine - Mods patcher by NekoJonez - v1.2 - Released 18/07/2024"
+$label_credit.Text = "$title - v1.3 - Released 19/07/2024"
 $label_credit.AutoSize = $true
 $label_credit.Dock = [System.Windows.Forms.DockStyle]::Fill
 $label_credit.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter

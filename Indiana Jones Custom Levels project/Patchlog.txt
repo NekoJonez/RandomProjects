@@ -1,5 +1,12 @@
 Version history patcher
 
+v1.3 - 19/07/2024
+
+* New: A feature to remember paths. This will create a new text file to store all your remembered paths.
+* Code: Made the title into a variable, so that's it's the same everywhere.
+* Code: Further improved some comments.
+* Fixed: Forgotten "?" added in a dialogue box.
+
 v1.2 - 18/07/2024
 
 * New: Added an exit button.
