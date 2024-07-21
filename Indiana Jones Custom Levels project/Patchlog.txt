@@ -1,5 +1,18 @@
 Version history patcher
 
+v1.4 - 21/07/2024
+
+* New: Added a button to open the entered resource path.
+* New: Added the mod install buttons. You can now install mods via a zip file or selecting the extracted folder.
+* Improved: The remember button now will only remember paths where Indy3D.exe is stored.
+* Improved: Improved the handling of enabling/disabling the dev mode more consistent.
+* Improved: Changed the backup behaviour of the gob files to be in line with the_kovic's tool.
+* Improved: Improved the restore behaviour of the tool so installs with the_kovic's tool can also be restored.
+* Improved: Some minor grammar improvements to some error messages.
+* Code: Removed some unneeded code to make the tool more consistent.
+* Code: Corrected even more code comments.
+* Fixed: Corrected the link to the right releases location instead of always v1.1.
+
 v1.3 - 19/07/2024
 
 * New: A feature to remember paths. This will create a new text file to store all your remembered paths.

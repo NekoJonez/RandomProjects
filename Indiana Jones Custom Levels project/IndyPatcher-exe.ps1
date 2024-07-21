@@ -14,8 +14,8 @@
 ##PdrWFpmIG2HcofKIo2QX
 ##OMfRFJyLFzWE8uK1
 ##KsfMAp/KUzWI0g==
-##OsfOAYaPHGbQvbyVvnQmqxiO
-##LNzNAIWJGmPcoKHc7Do3uAu/DDtL
+##OsfOAYaPHGbQvbyVvnQmqx+O
+##LNzNAIWJGmPcoKHc7Do3uAu/DDxL
 ##LNzNAIWJGnvYv7eVvnRe60/nQ2YqLu+Ut7O0hICy+6r4syCZYJQSTEZ5lyW8KUq+UfscULVY9PweUV0aLuYI6rfCew==
 ##M9zLA5mED3nfu77Q7TV64AuzAgg=
 ##NcDWAYKED3nfu77Q7TV64AuzAgg=
@@ -34,7 +34,7 @@
 # NekoJonez presents Indiana Jones and the Infernal Machine - Automatic Patcher for custom levels.
 # Based upon the work & tools by the modders over at https://github.com/Jones3D-The-Infernal-Engine/Mods/tree/main/levels/sed
 # Written in PowerShell core 7.4.3. Will work with PowerShell 5.1 & 7+.
-# Build 1.3 - 19/07/2024
+# Build 1.4 - 21/07/2024
 # Visit my gaming blog: https://arpegi.wordpress.com
 
 # Function to move files while skipping existing files
@@ -196,19 +196,21 @@ if (!(New-Object System.Security.Principal.WindowsPrincipal([System.Security.Pri
 # Create the form to show on screen.
 $form = New-Object System.Windows.Forms.Form
 $form.Text = $title
-$form.Size = New-Object System.Drawing.Size(1000, 700)
+$form.Size = New-Object System.Drawing.Size(1000, 760)
 $form.StartPosition = "CenterScreen"
 
 # Let's create column styles.
 $columnStyle1_location = New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 90)
 $columnStyle2_location = New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 10)
+$columnStyle1_modinstall = New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 50)
+$columnStyle2_modinstall = New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 50)
 $columnStyle1_RegKey = New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 33)
 $columnStyle2_RegKey = New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 33)
 $columnStyle3_RegKey = New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 33)
 
 # Create the TableLayoutPanel, so that it's better visually and I don't have to guess their location.
 $tableLayoutPanel = New-Object System.Windows.Forms.TableLayoutPanel
-$tableLayoutPanel.RowCount = 10
+$tableLayoutPanel.RowCount = 12
 $tableLayoutPanel.ColumnCount = 1
 $tableLayoutPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
 
@@ -220,11 +222,11 @@ $label_location.Dock = [System.Windows.Forms.DockStyle]::Fill
 $label_location.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
 $tableLayoutPanel.Controls.Add($label_location)
 
-# For the locate button.
+# For the location area.
 $tableLayoutPanelLocation = New-Object System.Windows.Forms.TableLayoutPanel
 $tableLayoutPanelLocation.Dock = [System.Windows.Forms.DockStyle]::Fill
 $tableLayoutPanelLocation.RowCount = 1
-$tableLayoutPanelLocation.ColumnCount = 3
+$tableLayoutPanelLocation.ColumnCount = 4
 $tableLayoutPanelLocation.Height = 30
 $tableLayoutPanelLocation.ColumnStyles.Add($columnStyle1_location)
 $tableLayoutPanelLocation.ColumnStyles.Add($columnStyle2_location)
@@ -286,6 +288,8 @@ $button_remember.Add_Click({
                 if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
                     $enteredPath = $textBox_location.Text
 
+                    $control_check_location = Join-Path $enteredPath -ChildPath "\Indy3D.exe"
+
                     # Read the existing paths from the text file
                     $existingPaths = if (Test-Path $textFilePath) { Get-Content $textFilePath } else { @() }
 
@@ -293,14 +297,19 @@ $button_remember.Add_Click({
                         [System.Windows.Forms.MessageBox]::Show("This location already exists.", $title)
                     }
                     else {
-                        try {
-                            Add-Content -Path $textFilePath -Value $enteredPath # Append the entered path to the text file
-                            Load-Paths # Reload paths into the ComboBox
-                            $button_remember.Text = "Forget" # Let's automagically set this to the forget mode.
-                            $logBox.AppendText("Success: Path $enteredPath is now added to the rememeber list.`n")
+                        if (Test-Path -Path $control_check_location) {
+                            try {
+                                Add-Content -Path $textFilePath -Value $enteredPath # Append the entered path to the text file
+                                Load-Paths # Reload paths into the ComboBox
+                                $button_remember.Text = "Forget" # Let's automagically set this to the forget mode.
+                                $logBox.AppendText("Success: Path $enteredPath is now added to the rememeber list.`n")
+                            }
+                            catch {
+                                [System.Windows.Forms.MessageBox]::Show("An error occurred: " + $_.Exception.Message, $title)
+                            }
                         }
-                        catch {
-                            [System.Windows.Forms.MessageBox]::Show("An error occurred: " + $_.Exception.Message, $title)
+                        else {
+                            [System.Windows.Forms.MessageBox]::Show("This is an invalid resource path. It won't be remembered.", $title)
                         }
                     }
                 }
@@ -334,6 +343,115 @@ $button_remember.Add_Click({
 # If the user has paths, let's load them.
 Load-Paths
 
+# Create a button for the user to open the resources folder
+$button_open = New-Object System.Windows.Forms.Button
+$button_open.Text = "Open"
+$button_open.AutoSize = $true
+$button_open.Cursor = [System.Windows.Forms.Cursors]::Hand
+$tableLayoutPanelLocation.Controls.Add($button_open)
+
+$button_open.Add_Click({
+        $enteredPath = $textBox_location.Text
+        if (!([string]::IsNullOrWhiteSpace($textBox_location.Text))) {
+            $control_check_location = Join-Path $enteredPath -ChildPath "\Indy3D.exe"
+
+            if (Test-Path -Path $control_check_location) {
+                Invoke-Item -Path $enteredPath
+            }
+        }
+        else {
+            [System.Windows.Forms.MessageBox]::Show("An invalid path is provided, this can't be opened.", $title)
+        }
+    })
+
+# Create a label for the mod installing
+$label_modinstall = New-Object System.Windows.Forms.Label
+$label_modinstall.Text = "Install a mod via:"
+$label_modinstall.AutoSize = $true
+$label_modinstall.Dock = [System.Windows.Forms.DockStyle]::Fill
+$label_modinstall.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
+$tableLayoutPanel.Controls.Add($label_modinstall)
+
+# The table layout for installing mods.
+$tableLayoutPanelModInstall = New-Object System.Windows.Forms.TableLayoutPanel
+$tableLayoutPanelModInstall.Dock = [System.Windows.Forms.DockStyle]::Fill
+$tableLayoutPanelModInstall.RowCount = 1
+$tableLayoutPanelModInstall.ColumnCount = 2
+$tableLayoutPanelModInstall.Height = 30
+$tableLayoutPanelModInstall.ColumnStyles.Add($columnStyle1_modinstall)
+$tableLayoutPanelModInstall.ColumnStyles.Add($columnStyle2_modinstall)
+$tableLayoutPanelModInstall.Height = 30
+$tableLayoutPanel.Controls.Add($tableLayoutPanelModInstall)
+
+$button_modinstall_folder = New-Object System.Windows.Forms.Button
+$button_modinstall_folder.Text = "Folder"
+$button_modinstall_folder.Dock = [System.Windows.Forms.DockStyle]::Fill
+$button_modinstall_folder.Cursor = [System.Windows.Forms.Cursors]::Hand
+$tableLayoutPanelModInstall.Controls.Add($button_modinstall_folder)
+
+$button_modinstall_zip.Add_Click({
+        $path_control = Join-Path -Path $textBox_location.Text -ChildPath "\Indy3D.exe"
+
+        if (Test-Path -Path $path_control) {
+            $folderBrowserDialog = New-Object System.Windows.Forms.FolderBrowserDialog
+            $folderBrowserDialog.Description = "Select a mod folder to copy"
+            $folderBrowserDialog.ShowNewFolderButton = $false
+
+            # Show the dialog and check if OK button was clicked
+            if ($folderBrowserDialog.ShowDialog() -eq 'OK') {
+                $sourceFolderPath = $folderBrowserDialog.SelectedPath
+                $destinationFolderPath = $folderPath
+
+                # Copy the folder contents
+                try {
+                    Copy-Item -Path "$sourceFolderPath\*" -Destination $destinationFolderPath -Recurse -Force
+                    $logBox.AppendText("Success: Copied the folder successfully.`n")
+                }
+                catch {
+                    $logBox.AppendText("Error: Failed to copy folder: $_`n")
+                }
+            }
+        }
+        else {
+            [System.Windows.Forms.MessageBox]::Show("Invalid resource path provided. Provide a valid path before choosing to copy a folder.", $title, [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+        }
+    })
+
+$button_modinstall_zip = New-Object System.Windows.Forms.Button
+$button_modinstall_zip.Text = "Zip"
+$button_modinstall_zip.Dock = [System.Windows.Forms.DockStyle]::Fill
+$button_modinstall_zip.Cursor = [System.Windows.Forms.Cursors]::Hand
+$tableLayoutPanelModInstall.Controls.Add($button_modinstall_zip)
+
+$button_modinstall_zip.Add_Click({
+        $path_control = Join-Path -Path $textBox_location.Text -ChildPath "\Indy3D.exe"
+
+        if (Test-Path -Path $path_control) {
+            $openFileDialog = New-Object System.Windows.Forms.OpenFileDialog
+            $openFileDialog.InitialDirectory = $folderPath
+            $openFileDialog.Filter = "ZIP Files (*.zip)|*.zip"
+            $openFileDialog.Multiselect = $false
+            $openFileDialog.Title = "Select a mod ZIP file to extract"
+
+            # Show the dialog and check if OK button was clicked
+            if ($openFileDialog.ShowDialog() -eq 'OK') {
+                $zipFilePath = $openFileDialog.FileName
+
+                # Extract the ZIP file contents using Expand-Archive
+                try {
+                    Expand-Archive -Path $zipFilePath -DestinationPath $folderPath -Force
+                    $logBox.AppendText("Success: Installed the mod successfully.`n")
+                }
+                catch {
+                    $logBox.AppendText("Error: Failed to extract ZIP file: $_`n")
+                }
+            }
+        }
+        else {
+            [System.Windows.Forms.MessageBox]::Show("Invalid resource path provided. Provide a valid path before choosing to install a mod.", $title, [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+        }
+    })
+
 # Create a label for the registry key
 $label_regkey = New-Object System.Windows.Forms.Label
 $label_regkey.Text = "Select the version you want to patch:"
@@ -363,7 +481,7 @@ $comboBox.AutoSize = $true
 $comboBox.Dock = [System.Windows.Forms.DockStyle]::Fill
 $tableLayoutPanelRegKey.Controls.Add($comboBox)
 
-# Create a button to start the patching proceess
+# Create a button to enable the dev mode.
 $button_enable_dev = New-Object System.Windows.Forms.Button
 $button_enable_dev.Text = "Enable dev mode"
 $button_enable_dev.Dock = [System.Windows.Forms.DockStyle]::Fill
@@ -375,6 +493,7 @@ $button_enable_dev.Add_Click({
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
             # Now we are going to do the reg edit fix.
             $selectedIndex = $comboBox.SelectedIndex
+            $enableDevMode.$null
             $enableDevMode = $true
 
             # Call the function and store the return messages
@@ -387,7 +506,7 @@ $button_enable_dev.Add_Click({
         }
     })
 
-# Create a button to start the patching proceess
+# Create a button to disable the dev mode.
 $button_disable_dev = New-Object System.Windows.Forms.Button
 $button_disable_dev.Text = "Disable dev mode"
 $button_disable_dev.Dock = [System.Windows.Forms.DockStyle]::Fill
@@ -399,6 +518,7 @@ $button_disable_dev.Add_Click({
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
             # Now we are going to do the reg edit fix.
             $selectedIndex = $comboBox.SelectedIndex
+            $enableDevMode.$null
             $enableDevMode = $false
 
             # Call the function and store the return messages
@@ -427,6 +547,9 @@ $button_patch.Add_Click({
             $textBox_location.Enabled = $false
             $button_location.Enabled = $false
             $button_remember.Enabled = $false
+            $button_open.Enabled = $false
+            $button_modinstall_folder.Enabled = $false
+            $button_modinstall_zip.Enabled = $false
             $comboBox.Enabled = $false
             $button_enable_dev.Enabled = $false
             $button_disable_dev.Enabled = $false
@@ -561,12 +684,11 @@ $button_patch.Add_Click({
 
             # Rename files using foreach loop, after this step 2 is done.
             foreach ($filePathToRename in $filePathsToRename) {
-                if (Test-Path -Path $filePathToRemove) {
+                if (Test-Path -Path $filePathToRename) {
                     $fileDirectory = [System.IO.Path]::GetDirectoryName($filePathToRename)
                     $fileName = [System.IO.Path]::GetFileNameWithoutExtension($filePathToRename)
-                    $fileExtension = [System.IO.Path]::GetExtension($filePathToRename)
 
-                    $newFileName = "$fileName`_backup$fileExtension"
+                    $newFileName = "$fileName.bak"
                     $newFilePath = [System.IO.Path]::Combine($fileDirectory, $newFileName)
 
                     Rename-Item -Path $filePathToRename -NewName $newFilePath -Force
@@ -857,14 +979,6 @@ $button_patch.Add_Click({
             }
             catch {
                 $logBox.AppendText("Error: failure in moving the key folder. $_ . Stopping the patching.`n")
-                $textBox_location.Enabled = $true
-                $button_location.Enabled = $true
-                $comboBox.Enabled = $true
-                $button_enable_dev.Enabled = $true
-                $button_disable_dev.Enabled = $true
-                $button_patch.Enabled = $true
-                $button_unpatch.Enabled = $true
-                $button_remember.Enabled = $true
                 return
             }
 
@@ -885,12 +999,15 @@ $button_patch.Add_Click({
             $desktop_location = [Environment]::GetFolderPath("Desktop")
 
             Create-Shortcut -ShortcutName $ShortcutName -TargetPath $dev_mode_exe_location -ShortcutFolderPath $desktop_location
-            $logbox.AppendText("Success: shortcut has been created. `n")
+            $logbox.AppendText("Success: shortcut has been created.`n")
 
             $logBox.AppendText("Success: patching was successful.`n")
             $textBox_location.Enabled = $true
             $button_location.Enabled = $true
             $button_remember.Enabled = $true
+            $button_open.Enabled = $true
+            $button_modinstall_folder.Enabled = $true
+            $button_modinstall_zip.Enabled = $true
             $comboBox.Enabled = $true
             $button_enable_dev.Enabled = $true
             $button_disable_dev.Enabled = $true
@@ -909,11 +1026,14 @@ $button_unpatch.Cursor = [System.Windows.Forms.Cursors]::Hand
 $tableLayoutPanel.Controls.Add($button_unpatch)
 
 $button_unpatch.Add_Click({
-        $result = [System.Windows.Forms.MessageBox]::Show("This will undo the patching of the game done by this script. It will undo changes in the resource folder & the registry. Be sure the the following information is correct: the path to the resource folder and the selected version for the registry. Are you certain?", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+        $result = [System.Windows.Forms.MessageBox]::Show("This will undo the patching of the game done by this script. It will undo changes in the resource folder & the registry. This will also uninstall all custom levels. Be sure the the following information is correct: the path to the resource folder and the selected version for the registry. Are you certain?", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
             $textBox_location.Enabled = $false
             $button_location.Enabled = $false
             $button_remember.Enabled = $false
+            $button_open.Enabled = $false
+            $button_modinstall_folder.Enabled = $false
+            $button_modinstall_zip.Enabled = $false
             $comboBox.Enabled = $false
             $button_enable_dev.Enabled = $false
             $button_disable_dev.Enabled = $false
@@ -922,41 +1042,48 @@ $button_unpatch.Add_Click({
             $button_shortcut.Enabled = $false
             $button_exit.Enabled = $false
 
-            # Let's undo the renaming of the GOB files.
+            # Let's undo the renaming of the GOB files. This first array is if the user used my old version of the tool.
             $gob_backup_extract_cd1 = Join-Path $textBox_location.Text -ChildPath "\CD1_backup.gob"
             $gob_backup_extract_cd2 = Join-Path $textBox_location.Text -ChildPath "\CD2_backup.gob"
             $gob_backup_extract_jones3d = Join-Path $textBox_location.Text -ChildPath "\JONES3D_backup.gob"
             $fileBackupPathsToRename = @($gob_backup_extract_cd1, $gob_backup_extract_cd2, $gob_backup_extract_jones3d)
 
-            foreach ($fileBackupPathToRename in $fileBackupPathsToRename) {
-                if (Test-Path -Path $fileBackupPathToRename) {
-                    $fileDirectory = [System.IO.Path]::GetDirectoryName($fileBackupPathToRename)
-                    $fileName = [System.IO.Path]::GetFileNameWithoutExtension($fileBackupPathToRename)
-                    $fileExtension = [System.IO.Path]::GetExtension($fileBackupPathToRename)
+            # Let's undo the renaming of the GOB files. This second array is if the user used the new version of the tool.
+            $gob_bak_extract_cd1 = Join-Path $textBox_location.Text -ChildPath "\CD1.gob.bak"
+            $gob_bak_extract_cd2 = Join-Path $textBox_location.Text -ChildPath "\CD2.gob.bak"
+            $gob_bak_extract_jones3d = Join-Path $textBox_location.Text -ChildPath "\JONES3D.gob.bak"
+            $fileBakPathsToRename = @($gob_bak_extract_cd1, $gob_bak_extract_cd2, $gob_bak_extract_jones3d)
 
-                    # Check if the filename ends with "_backup"
+            # Combine both arrays for the renaming process
+            $filePathsToRename = $fileBackupPathsToRename + $fileBakPathsToRename
+
+            foreach ($filePathToRename in $filePathsToRename) {
+                if (Test-Path -Path $filePathToRename) {
+                    $fileDirectory = [System.IO.Path]::GetDirectoryName($filePathToRename)
+                    $fileName = [System.IO.Path]::GetFileNameWithoutExtension($filePathToRename)
+                    $fileExtension = [System.IO.Path]::GetExtension($filePathToRename)
+
                     if ($fileName.EndsWith("_backup")) {
                         # Remove "_backup" from the filename
                         $newFileName = $fileName.Substring(0, $fileName.Length - 7) + $fileExtension
-                        $newFilePath = [System.IO.Path]::Combine($fileDirectory, $newFileName)
-
-                        Rename-Item -Path $fileBackupPathToRename -NewName $newFilePath -Force
                     }
+                    elseif ($fileExtension -eq ".bak") {
+                        # Change the .bak extension to .gob
+                        $newFileName = $fileName + ".gob"
+                    }
+                    else {
+                        continue
+                    }
+
+                    $newFilePath = [System.IO.Path]::Combine($fileDirectory, $newFileName)
+                    Rename-Item -Path $filePathToRename -NewName $newFilePath -Force
                 }
                 else {
-                    $logBox.AppendText("Failure: The GOB file $($fileBackupPathToRename) doesn't exist. Can't complete the process. Exit.`n")
-                    $textBox_location.Enabled = $true
-                    $button_location.Enabled = $true
-                    $comboBox.Enabled = $true
-                    $button_enable_dev.Enabled = $true
-                    $button_disable_dev.Enabled = $true
-                    $button_patch.Enabled = $true
-                    $button_unpatch.Enabled = $true
-                    $button_shortcut.Enabled = $true
-                    $button_exit.Enabled = $true
+                    $logBox.AppendText("Failure: The GOB file $($filePathToRename) doesn't exist. Can't complete the process. Exiting...`n")
                     return
                 }
             }
+
 
             $logBox.AppendText("Success: reverted the backup GOB files to it's original state.`n")
 
@@ -1013,6 +1140,10 @@ $button_unpatch.Add_Click({
             $textBox_location.Enabled = $true
             $button_location.Enabled = $true
             $button_remember.Enabled = $true
+            $button_modinstall_folder.Enabled = $true
+            $button_modinstall_zip.Enabled = $true
+            $button_remember.Enabled = $true
+            $button_open.Enabled = $true
             $comboBox.Enabled = $true
             $button_enable_dev.Enabled = $true
             $button_disable_dev.Enabled = $true
@@ -1065,10 +1196,10 @@ $button_shortcut.Add_Click({
                     $desktop_location = [Environment]::GetFolderPath("Desktop")
 
                     Create-Shortcut -ShortcutName $ShortcutName -TargetPath $dev_mode_exe_location -ShortcutFolderPath $desktop_location
-                    $logbox.AppendText("Success: shortcut has been created. `n")
+                    $logbox.AppendText("Success: shortcut has been created.`n")
                 }
                 else {
-                    $logBox.AppendText("Error: no valid game executable found in the resource folder. `n")
+                    $logBox.AppendText("Error: no valid game executable found in the resource folder.`n")
                     return
                 }
             }
@@ -1091,7 +1222,7 @@ $button_exit.Add_Click({
 
 # Create the credit label
 $label_credit = New-Object System.Windows.Forms.Label
-$label_credit.Text = "$title - v1.3 - Released 19/07/2024"
+$label_credit.Text = "$title - v1.4 - Released 21/07/2024"
 $label_credit.AutoSize = $true
 $label_credit.Dock = [System.Windows.Forms.DockStyle]::Fill
 $label_credit.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
@@ -1101,7 +1232,7 @@ $tableLayoutPanel.Controls.Add($label_credit)
 
 # Add the event handler for the Click event
 $label_credit.Add_Click({
-        Start-Process "https://github.com/NekoJonez/RandomProjects/releases/tag/IndianaJonesPatcher"
+        Start-Process "https://github.com/NekoJonez/RandomProjects/releases"
     })
 
 # Add the TableLayoutPanel to the form
