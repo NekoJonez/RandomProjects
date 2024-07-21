@@ -1,5 +1,9 @@
 Version history patcher
 
+v1.4.1 - 21/07/2024
+
+* Fixed: COG folder wasn't backed up correctly due to a variable mistake.
+
 v1.4 - 21/07/2024
 
 * New: Added a button to open the entered resource path.
