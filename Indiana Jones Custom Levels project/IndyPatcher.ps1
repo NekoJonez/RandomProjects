@@ -1,7 +1,7 @@
 # NekoJonez presents Indiana Jones and the Infernal Machine - Automatic Patcher for custom levels.
 # Based upon the work & tools by the modders over at https://github.com/Jones3D-The-Infernal-Engine/Mods/tree/main/levels/sed
 # Written in PowerShell core 7.4.3. Will work with PowerShell 5.1 & 7+.
-# Build 1.4.1 - 21/07/2024
+# Build 1.4.2 - 23/07/2024
 # Visit my gaming blog: https://arpegi.wordpress.com
 
 # Function to move files while skipping existing files
@@ -356,8 +356,9 @@ $button_modinstall_folder.Dock = [System.Windows.Forms.DockStyle]::Fill
 $button_modinstall_folder.Cursor = [System.Windows.Forms.Cursors]::Hand
 $tableLayoutPanelModInstall.Controls.Add($button_modinstall_folder)
 
-$button_modinstall_zip.Add_Click({
+$button_modinstall_folder.Add_Click({
         $path_control = Join-Path -Path $textBox_location.Text -ChildPath "\Indy3D.exe"
+        $extraction_path = $textBox_location.Text
 
         if (Test-Path -Path $path_control) {
             $folderBrowserDialog = New-Object System.Windows.Forms.FolderBrowserDialog
@@ -367,7 +368,7 @@ $button_modinstall_zip.Add_Click({
             # Show the dialog and check if OK button was clicked
             if ($folderBrowserDialog.ShowDialog() -eq 'OK') {
                 $sourceFolderPath = $folderBrowserDialog.SelectedPath
-                $destinationFolderPath = $folderPath
+                $destinationFolderPath = $extraction_path
 
                 # Copy the folder contents
                 try {
@@ -392,6 +393,7 @@ $tableLayoutPanelModInstall.Controls.Add($button_modinstall_zip)
 
 $button_modinstall_zip.Add_Click({
         $path_control = Join-Path -Path $textBox_location.Text -ChildPath "\Indy3D.exe"
+        $extraction_path = $textBox_location.Text
 
         if (Test-Path -Path $path_control) {
             $openFileDialog = New-Object System.Windows.Forms.OpenFileDialog
@@ -406,7 +408,7 @@ $button_modinstall_zip.Add_Click({
 
                 # Extract the ZIP file contents using Expand-Archive
                 try {
-                    Expand-Archive -Path $zipFilePath -DestinationPath $folderPath -Force
+                    Expand-Archive -Path $zipFilePath -DestinationPath $extraction_path -Force
                     $logBox.AppendText("Success: Installed the mod successfully.`n")
                 }
                 catch {
@@ -1189,7 +1191,7 @@ $button_exit.Add_Click({
 
 # Create the credit label
 $label_credit = New-Object System.Windows.Forms.Label
-$label_credit.Text = "$title - v1.4.1 - Released 21/07/2024"
+$label_credit.Text = "$title - v1.4.2 - Released 23/07/2024"
 $label_credit.AutoSize = $true
 $label_credit.Dock = [System.Windows.Forms.DockStyle]::Fill
 $label_credit.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter

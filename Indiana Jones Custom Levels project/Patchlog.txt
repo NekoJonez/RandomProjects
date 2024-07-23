@@ -1,5 +1,9 @@
 Version history patcher
 
+v1.4.2 - 23/07/2024
+
+* Fixed: The button to install mods via a folder didn't work.
+
 v1.4.1 - 21/07/2024
 
 * Fixed: COG folder wasn't backed up correctly due to a variable mistake.
@@ -51,7 +55,7 @@ v1.1 - 17/07/2024
 * Code: Did some minor re-ordering of the script to make it more readable.
 * Code: Minor improvements to some comments to explain more what's going on.
 * Code: Renamed a variable to make it more clear what it does.
-* Fixed: The registry edit could fail in some cases.	
+* Fixed: The registry edit could fail in some cases.
 * Fixed: Removed the unneeded white space between the file input field and reg selection.
 
 v1.0 - 15/07/2024
