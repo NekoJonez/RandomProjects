@@ -1,5 +1,16 @@
 Version history patcher
 
+v1.5 - 23/07/2024
+
+* Improved: The buttons of the tool will now be disabled when you provide an invalid resource location.
+* Improved: Made sure that if you are e.g. installing mods, the tool can't be used to avoid problems.
+* Improved: Improved the mod install by quite a lot.
+	- It will now sort the files to the correct location. No matter how the mod dev packed the files.
+* Fixed: Buttons kept being disabled when the tool crashes.
+* Code: Improved code comments. (As usual.)
+* Code: Did some minor re-ordering to make the code more readable.
+* Code: Made it a lot more simple to implement new buttons.
+
 v1.4.2 - 23/07/2024
 
 * Fixed: The button to install mods via a folder didn't work.

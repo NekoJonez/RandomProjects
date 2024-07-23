@@ -14,8 +14,8 @@
 ##PdrWFpmIG2HcofKIo2QX
 ##OMfRFJyLFzWE8uK1
 ##KsfMAp/KUzWI0g==
-##OsfOAYaPHGbQvbyVvnQmqx+gEAg=
-##LNzNAIWJGmPcoKHc7Do3uAu/DDxlPKU=
+##OsfOAYaPHGbQvbyVvnQmqx6O
+##LNzNAIWJGmPcoKHc7Do3uAu/DD1L
 ##LNzNAIWJGnvYv7eVvnRe60/nQ2YqLu+Ut7O0hICy+6r4syCZYJQSTEZ5lyW8KUq+UfscULVY9PweUV0aLuYI6rfCew==
 ##M9zLA5mED3nfu77Q7TV64AuzAgg=
 ##NcDWAYKED3nfu77Q7TV64AuzAgg=
@@ -34,7 +34,7 @@
 # NekoJonez presents Indiana Jones and the Infernal Machine - Automatic Patcher for custom levels.
 # Based upon the work & tools by the modders over at https://github.com/Jones3D-The-Infernal-Engine/Mods/tree/main/levels/sed
 # Written in PowerShell core 7.4.3. Will work with PowerShell 5.1 & 7+.
-# Build 1.4.2 - 23/07/2024
+# Build 1.5 - 23/07/2024
 # Visit my gaming blog: https://arpegi.wordpress.com
 
 # Function to move files while skipping existing files
@@ -162,11 +162,23 @@ function Create-Shortcut {
 
 # Function to load paths from the text file into the ComboBox
 function Load-Paths {
+    param (
+        [ValidateSet("first", "second")]
+        [string] $pathLoadState
+    )
+
     $textBox_location.Items.Clear()
     if (Test-Path $textFilePath) {
         Get-Content $textFilePath | ForEach-Object {
             $textBox_location.Items.Add($_)
         }
+    }
+
+    if ($pathLoadState -eq "Second") {
+        Check-Valid-Location -buttonUpdateState "control"
+    }
+    elseif ($pathLoadState -eq "First") {
+        # We are still loading in, so no need to check the locations. Otherwise we are going to spit out errors.
     }
 }
 
@@ -180,6 +192,179 @@ function Update-ButtonText {
         $button_remember.Text = "Remember"
     }
 }
+
+# This massive function installs and copies mod files to the right location for you.
+function Install-Mods-Manually {
+    param (
+        [string]$sourcePath,
+        [string]$destinationPath
+    )
+
+    # Define the folder array we can just move.
+    $subfolders = @("3do", "cog", "hi3do", "mat", "misc", "ndy", "sound")
+
+    # Define file type to destination mappings
+    $fileTypeMappings = @{
+        ".key" = "3do\key"
+        ".3do" = @("3do", "hi3do")
+        ".mat" = "mat"
+        ".bmp" = "misc"
+        ".uni" = "misc"
+        ".dat" = "misc"
+        ".ai"  = "misc\ai"
+        ".pup" = "misc\pup"
+        ".snd" = "misc\snd"
+        ".spr" = "misc\spr"
+        ".ndy" = "ndy"
+        ".cnd" = "ndy"
+        ".wav" = "sound"
+        ".cog" = "cog"
+    }
+
+    # Function to move files based on their extensions to their corresponding subfolders
+    function Move-FilesByType {
+        param (
+            [string]$sourceFolderPath,
+            [string]$destinationBasePath,
+            [hashtable]$typeMappings
+        )
+
+        foreach ($mapping in $typeMappings.GetEnumerator()) {
+            $fileExtension = $mapping.Key
+            $destinationSubfolders = $mapping.Value
+
+            # Ensure destination subfolders are handled as an array
+            if (-not ($destinationSubfolders -is [System.Collections.IEnumerable])) {
+                $destinationSubfolders = @($destinationSubfolders)
+            }
+
+            # Find all files with the current extension
+            $filesToMove = Get-ChildItem -Path $sourceFolderPath -Recurse -File -Filter "*$fileExtension"
+            if ($filesToMove.Count -gt 0) {
+                foreach ($destFolder in $destinationSubfolders) {
+                    $destinationPath = Join-Path -Path $destinationBasePath -ChildPath $destFolder
+                    if (!(Test-Path -Path $destinationPath -PathType Container)) {
+                        New-Item -Path $destinationPath -ItemType Directory | Out-Null
+                    }
+
+                    foreach ($file in $filesToMove) {
+                        $destFilePath = Join-Path -Path $destinationPath -ChildPath $file.Name
+                        if ($fileExtension -eq ".3do") {
+                            if ($destFolder -eq "3do") {
+                                # Special handling for .3do files: Copy to "3do" folder
+                                Copy-Item -Path $file.FullName -Destination $destFilePath -Force
+                            }
+                            elseif ($destFolder -eq "hi3do") {
+                                # Special handling for .3do files: Move to "hi3do" folder
+                                Move-Item -Path $file.FullName -Destination $destFilePath -Force
+                            }
+                        }
+                        else {
+                            # Move other files and overwrite if they already exist
+                            Move-Item -Path $file.FullName -Destination $destFilePath -Force
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    # Function to move the contents of the target subfolder to the destination subfolder
+    function Move-SubfolderContents {
+        param (
+            [string]$sourcePath,
+            [string]$destinationPath
+        )
+
+        try {
+            # Ensure the destination path exists
+            if (!(Test-Path -Path $destinationPath -PathType Container)) {
+                New-Item -Path $destinationPath -ItemType Directory | Out-Null
+            }
+
+            # Move the contents of the source subfolder to the destination subfolder
+            Get-ChildItem -Path $sourcePath -Recurse | Move-Item -Destination $destinationPath -Force
+        }
+        catch {
+            Write-Host "Error moving contents from $sourcePath to $destinationPath : $_"
+        }
+    }
+
+    # Iterate through each specified subfolder and move contents if found in the target folder
+    foreach ($subfolder in $subfolders) {
+        $sourceSubfolderPath = Join-Path -Path $sourcePath -ChildPath $subfolder
+        $destinationSubfolderPath = Join-Path -Path $destinationPath -ChildPath $subfolder
+
+        if (Test-Path -Path $sourceSubfolderPath -PathType Container) {
+            Move-SubfolderContents -sourcePath $sourceSubfolderPath -destinationPath $destinationSubfolderPath
+        }
+    }
+
+    # Move files based on their types
+    Move-FilesByType -sourceFolderPath $sourcePath -destinationBasePath $destinationPath -typeMappings $fileTypeMappings
+}
+
+# Let's update the buttons on the form.
+function Check-Valid-Location {
+    param (
+        [ValidateSet("control", "disable")]
+        [string] $buttonUpdateState
+    )
+
+    if ($buttonUpdateState -eq "control") {
+        $valid_path.$null
+
+        # Check if the textBox_location has a value
+        if (!($textBox_location.Text)) {
+            $valid_path = "false"
+        }
+        else {
+            $valid_path = Join-Path -Path $textBox_location.Text -ChildPath "Indy3D.exe"
+        }
+
+        # Enable or disable buttons based on the existence of the file
+        if (Test-Path -Path $valid_path) {
+            $textBox_location.Enabled = $true
+            $button_location.Enabled = $true
+            $button_remember.Enabled = $true
+            $button_open.Enabled = $true
+            $button_modinstall_folder.Enabled = $true
+            $button_modinstall_zip.Enabled = $true
+            $comboBox.Enabled = $true
+            $button_enable_dev.Enabled = $true
+            $button_disable_dev.Enabled = $true
+            $button_patch.Enabled = $true
+            $button_unpatch.Enabled = $true
+            $button_shortcut.Enabled = $true
+        }
+        else {
+            $button_modinstall_folder.Enabled = $false
+            $button_modinstall_zip.Enabled = $false
+            $comboBox.Enabled = $false
+            $button_enable_dev.Enabled = $false
+            $button_disable_dev.Enabled = $false
+            $button_patch.Enabled = $false
+            $button_unpatch.Enabled = $false
+            $button_shortcut.Enabled = $false
+        }
+    }
+    elseif ($buttonUpdateState -eq "disable") {
+        # Let's disable those buttons.
+        $textBox_location.Enabled = $false
+        $button_location.Enabled = $false
+        $button_remember.Enabled = $false
+        $button_open.Enabled = $false
+        $button_modinstall_folder.Enabled = $false
+        $button_modinstall_zip.Enabled = $false
+        $comboBox.Enabled = $false
+        $button_enable_dev.Enabled = $false
+        $button_disable_dev.Enabled = $false
+        $button_patch.Enabled = $false
+        $button_unpatch.Enabled = $false
+        $button_shortcut.Enabled = $false
+    }
+}
+
 
 # Let's show a form on screen.
 Add-Type -AssemblyName System.Windows.Forms
@@ -239,6 +424,18 @@ $textBox_location.AutoSize = $true
 $textBox_location.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDown
 $tableLayoutPanelLocation.Controls.Add($textBox_location)
 
+# Event handler for ComboBox selection
+$textBox_location.add_SelectedIndexChanged({
+        Update-ButtonText
+        Check-Valid-Location -buttonUpdateState "control"
+    })
+
+# Event handler for ComboBox text input
+$textBox_location.add_TextChanged({
+        Update-ButtonText
+        Check-Valid-Location -buttonUpdateState "control"
+    })
+
 # Create a button for the user to locate the resources folder
 $button_location = New-Object System.Windows.Forms.Button
 $button_location.Text = "Browse"
@@ -264,17 +461,8 @@ $button_remember.AutoSize = $true
 $button_remember.Cursor = [System.Windows.Forms.Cursors]::Hand
 $tableLayoutPanelLocation.Controls.Add($button_remember)
 
+# What's that textfile that saved remembered paths?
 $textFilePath = "Indy3DPatcherPaths.txt"
-
-# Event handler for ComboBox selection
-$textBox_location.add_SelectedIndexChanged({
-        Update-ButtonText
-    })
-
-# Event handler for ComboBox text input
-$textBox_location.add_TextChanged({
-        Update-ButtonText
-    })
 
 # Add the click event for the remember button. Work with an elseif here, otherwise this stinker goes from remember mode directly into forget mode.
 $button_remember.Add_Click({
@@ -300,16 +488,19 @@ $button_remember.Add_Click({
                         if (Test-Path -Path $control_check_location) {
                             try {
                                 Add-Content -Path $textFilePath -Value $enteredPath # Append the entered path to the text file
-                                Load-Paths # Reload paths into the ComboBox
+                                Load-Paths -pathLoadState "Second" # Reload paths into the ComboBox
+                                Check-Valid-Location -buttonUpdateState "control" # Let's check if buttons needs to be enabled or not.
                                 $button_remember.Text = "Forget" # Let's automagically set this to the forget mode.
                                 $logBox.AppendText("Success: Path $enteredPath is now added to the rememeber list.`n")
                             }
                             catch {
                                 [System.Windows.Forms.MessageBox]::Show("An error occurred: " + $_.Exception.Message, $title)
+                                Check-Valid-Location -buttonUpdateState "control" # Let's check if buttons needs to be enabled or not.
                             }
                         }
                         else {
                             [System.Windows.Forms.MessageBox]::Show("This is an invalid resource path. It won't be remembered.", $title)
+                            Check-Valid-Location -buttonUpdateState "control" # Let's check if buttons needs to be enabled or not.
                         }
                     }
                 }
@@ -328,9 +519,10 @@ $button_remember.Add_Click({
 
                         # Let's make sure the UI reacts correctly.
                         $textBox_location.Text = ""
-                        Load-Paths # Reload paths into the ComboBox
+                        Load-Paths -pathLoadState "Second" # Reload paths into the ComboBox
                         $logBox.AppendText("Success: Remembered path $selectedPath was removed from the list.`n")
                         $button_remember.Text = "Remember"
+                        Check-Valid-Location -buttonUpdateState "control" # Let's check if buttons needs to be enabled or not.
                     }
                     catch {
                         [System.Windows.Forms.MessageBox]::Show("An error occurred: " + $_.Exception.Message, $title)
@@ -341,7 +533,7 @@ $button_remember.Add_Click({
     })
 
 # If the user has paths, let's load them.
-Load-Paths
+Load-Paths -pathLoadState "First"
 
 # Create a button for the user to open the resources folder
 $button_open = New-Object System.Windows.Forms.Button
@@ -361,6 +553,7 @@ $button_open.Add_Click({
         }
         else {
             [System.Windows.Forms.MessageBox]::Show("An invalid path is provided, this can't be opened.", $title)
+            Check-Valid-Location -buttonUpdateState "control"
         }
     })
 
@@ -383,6 +576,7 @@ $tableLayoutPanelModInstall.ColumnStyles.Add($columnStyle2_modinstall)
 $tableLayoutPanelModInstall.Height = 30
 $tableLayoutPanel.Controls.Add($tableLayoutPanelModInstall)
 
+# With this button the user can install mods with the content of a folder.
 $button_modinstall_folder = New-Object System.Windows.Forms.Button
 $button_modinstall_folder.Text = "Folder"
 $button_modinstall_folder.Dock = [System.Windows.Forms.DockStyle]::Fill
@@ -390,34 +584,56 @@ $button_modinstall_folder.Cursor = [System.Windows.Forms.Cursors]::Hand
 $tableLayoutPanelModInstall.Controls.Add($button_modinstall_folder)
 
 $button_modinstall_folder.Add_Click({
-        $path_control = Join-Path -Path $textBox_location.Text -ChildPath "\Indy3D.exe"
-        $extraction_path = $textBox_location.Text
+        Check-Valid-Location -buttonUpdateState "disable"
 
-        if (Test-Path -Path $path_control) {
-            $folderBrowserDialog = New-Object System.Windows.Forms.FolderBrowserDialog
-            $folderBrowserDialog.Description = "Select a mod folder to copy"
-            $folderBrowserDialog.ShowNewFolderButton = $false
+        # Extract paths from controls
+        $basePath = $textBox_location.Text
+        $path_control = Join-Path -Path $basePath -ChildPath "Indy3D.exe"
+        $extraction_path = $basePath
 
-            # Show the dialog and check if OK button was clicked
-            if ($folderBrowserDialog.ShowDialog() -eq 'OK') {
-                $sourceFolderPath = $folderBrowserDialog.SelectedPath
-                $destinationFolderPath = $extraction_path
-
-                # Copy the folder contents
-                try {
-                    Copy-Item -Path "$sourceFolderPath\*" -Destination $destinationFolderPath -Recurse -Force
-                    $logBox.AppendText("Success: Copied the folder successfully.`n")
-                }
-                catch {
-                    $logBox.AppendText("Error: Failed to copy folder: $_`n")
-                }
-            }
+        # Validate base path and control path
+        if (([string]::IsNullOrWhiteSpace($basePath)) -or (!(Test-Path -Path $basePath))) {
+            $logbox.AppendText("Error: Invalid folder mod path selected.`n")
+            Check-Valid-Location -buttonUpdateState "control"
+            return
         }
-        else {
-            [System.Windows.Forms.MessageBox]::Show("Invalid resource path provided. Provide a valid path before choosing to copy a folder.", $title, [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+
+        if (!(Test-Path -Path $path_control)) {
+            $logbox.AppendText("Error: Invalid resource path selected.`n")
+            Check-Valid-Location -buttonUpdateState "control"
+            return
+        }
+
+        # Show FolderBrowserDialog to select the mod folder
+        $folderBrowserDialog = New-Object System.Windows.Forms.FolderBrowserDialog
+        $folderBrowserDialog.Description = "Select a mod folder to copy"
+        $folderBrowserDialog.ShowNewFolderButton = $false
+
+        # Show the dialog and check if OK button was clicked
+        if ($folderBrowserDialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+            $sourceFolderPath = $folderBrowserDialog.SelectedPath
+
+            # Validate source folder path
+            if ([string]::IsNullOrWhiteSpace($sourceFolderPath) -or -not (Test-Path -Path $sourceFolderPath)) {
+                $logbox.AppendText("Error: Invalid mod folder path provided. Provide a valid folder to copy.`n")
+                Check-Valid-Location -buttonUpdateState "control"
+                return
+            }
+
+            # Copy the folder contents
+            try {
+                Install-Mods-Manually -sourcePath $sourceFolderPath -destinationPath $extraction_path
+                $logBox.AppendText("Success: Copied the folder successfully. You can delete the original folder.`n")
+                Check-Valid-Location -buttonUpdateState "control"
+            }
+            catch {
+                $logBox.AppendText("Error: Failed to copy folder: $_`n")
+                Check-Valid-Location -buttonUpdateState "control"
+            }
         }
     })
 
+# With this button, the user can install mods via a downloaded ZIP folder.
 $button_modinstall_zip = New-Object System.Windows.Forms.Button
 $button_modinstall_zip.Text = "Zip"
 $button_modinstall_zip.Dock = [System.Windows.Forms.DockStyle]::Fill
@@ -425,32 +641,57 @@ $button_modinstall_zip.Cursor = [System.Windows.Forms.Cursors]::Hand
 $tableLayoutPanelModInstall.Controls.Add($button_modinstall_zip)
 
 $button_modinstall_zip.Add_Click({
-        $path_control = Join-Path -Path $textBox_location.Text -ChildPath "\Indy3D.exe"
-        $extraction_path = $textBox_location.Text
+    Check-Valid-Location -buttonUpdateState "disable"
+
+        # Define the path to check and the initial extraction path
+        $basePath = $textBox_location.Text
+        $path_control = Join-Path -Path $basePath -ChildPath "Indy3D.exe"
 
         if (Test-Path -Path $path_control) {
+            # Create a temporary folder in a safe location
+            $tempFolder = "C:\Temp_Indy_Mod"
+
+            # Create the directory if it does not exist
+            if (!(Test-Path -Path $tempFolder)) {
+                New-Item -Path $tempFolder -ItemType Directory | Out-Null
+            }
+
+            # Open file dialog for selecting a ZIP file
             $openFileDialog = New-Object System.Windows.Forms.OpenFileDialog
-            $openFileDialog.InitialDirectory = $folderPath
+            $openFileDialog.InitialDirectory = [System.Environment]::GetFolderPath('Desktop')
             $openFileDialog.Filter = "ZIP Files (*.zip)|*.zip"
             $openFileDialog.Multiselect = $false
             $openFileDialog.Title = "Select a mod ZIP file to extract"
 
             # Show the dialog and check if OK button was clicked
-            if ($openFileDialog.ShowDialog() -eq 'OK') {
+            if ($openFileDialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
                 $zipFilePath = $openFileDialog.FileName
+
+                # Validate ZIP file path
+                if (([string]::IsNullOrWhiteSpace($zipFilePath)) -or (!(Test-Path -Path $zipFilePath))) {
+                    $logbox.AppendText("Error: Invalid ZIP file path provided. Provide a valid ZIP file.`n")
+                    Check-Valid-Location -buttonUpdateState "control"
+                    return
+                }
 
                 # Extract the ZIP file contents using Expand-Archive
                 try {
-                    Expand-Archive -Path $zipFilePath -DestinationPath $extraction_path -Force
-                    $logBox.AppendText("Success: Installed the mod successfully.`n")
+                    Expand-Archive -Path $zipFilePath -DestinationPath $tempFolder -Force
+                    Install-Mods-Manually -sourcePath $tempFolder -destinationBasePath $basePath
+                    Remove-Item -Path $tempFolder -Recurse -Force
+                    $logBox.AppendText("Success: Installed the mod successfully. You can remove the zip file. It's possible that a temp folder is on the root of your C drive.`n")
                 }
                 catch {
                     $logBox.AppendText("Error: Failed to extract ZIP file: $_`n")
+                    Check-Valid-Location -buttonUpdateState "control"
+                    return
                 }
             }
         }
         else {
-            [System.Windows.Forms.MessageBox]::Show("Invalid resource path provided. Provide a valid path before choosing to install a mod.", $title, [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+            $logbox.AppendText("Error: Invalid resource path selected.`n")
+            Check-Valid-Location -buttonUpdateState "control"
+            return
         }
     })
 
@@ -493,6 +734,7 @@ $tableLayoutPanelRegKey.Controls.Add($button_enable_dev)
 $button_enable_dev.Add_Click({
         $result = [System.Windows.Forms.MessageBox]::Show("This will patch the registry so the dev mode is enabled. Are you want to sure you want to continue?", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+            Check-Valid-Location -buttonUpdateState "disable"
             # Now we are going to do the reg edit fix.
             $selectedIndex = $comboBox.SelectedIndex
             $enableDevMode.$null
@@ -505,6 +747,7 @@ $button_enable_dev.Add_Click({
             foreach ($message in $returnMessages) {
                 $logBox.AppendText("$message`n")
             }
+            Check-Valid-Location -buttonUpdateState "control"
         }
     })
 
@@ -518,6 +761,7 @@ $tableLayoutPanelRegKey.Controls.Add($button_disable_dev)
 $button_disable_dev.Add_Click({
         $result = [System.Windows.Forms.MessageBox]::Show("This will patch the registry so the dev mode is disabled. Are you sure you want to continue?", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+            Check-Valid-Location -buttonUpdateState "disable"
             # Now we are going to do the reg edit fix.
             $selectedIndex = $comboBox.SelectedIndex
             $enableDevMode.$null
@@ -530,6 +774,7 @@ $button_disable_dev.Add_Click({
             foreach ($message in $returnMessages) {
                 $logBox.AppendText("$message`n")
             }
+            Check-Valid-Location -buttonUpdateState "control"
         }
     })
 
@@ -542,23 +787,9 @@ $tableLayoutPanel.Controls.Add($button_patch)
 
 # Add button click event
 $button_patch.Add_Click({
-        # TODO: implement when return, to unlock the inputs. So, it's time for a boolean variable. Phft, refactoring :/
-
         $result = [System.Windows.Forms.MessageBox]::Show("This will start the patching process with the selected values. Are you certain? If something goes wrong, you'll have to restart the tool.", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
-            $textBox_location.Enabled = $false
-            $button_location.Enabled = $false
-            $button_remember.Enabled = $false
-            $button_open.Enabled = $false
-            $button_modinstall_folder.Enabled = $false
-            $button_modinstall_zip.Enabled = $false
-            $comboBox.Enabled = $false
-            $button_enable_dev.Enabled = $false
-            $button_disable_dev.Enabled = $false
-            $button_patch.Enabled = $false
-            $button_unpatch.Enabled = $false
-            $button_shortcut.Enabled = $false
-            $button_exit.Enabled = $false
+            Check-Valid-Location -buttonUpdateState "disable"
 
             if ($textBox_location.Text) {
                 $location_checker = Join-Path -Path $textBox_location.Text -ChildPath "\Indy3D.exe"
@@ -567,11 +798,13 @@ $button_patch.Add_Click({
                 }
                 else {
                     $logBox.AppendText("Error: Invalid resource path provided. Stopping pathing procedure.`n")
+                    Check-Valid-Location -buttonUpdateState "control"
                     return
                 }
             }
             else {
                 $logBox.AppendText("Error: Invalid reesource path provided. Stopping pathing procedure.`n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
 
@@ -585,6 +818,7 @@ $button_patch.Add_Click({
             }
             catch {
                 $logBox.AppendText("Error: Tools couldn't be downloaded. $_ . Stopping pathing procedure.`n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
 
@@ -594,6 +828,7 @@ $button_patch.Add_Click({
             }
             catch {
                 $logBox.AppendText("Error: Tools couldn't be extracted and moved. $_ . Stopping pathing procedure.`n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
 
@@ -613,6 +848,7 @@ $button_patch.Add_Click({
                 }
                 else {
                     $logBox.AppendText("Error: CD1.GOB was missing and wasn't extracted.`n")
+                    Check-Valid-Location -buttonUpdateState "control"
                     return
                 }
 
@@ -623,6 +859,7 @@ $button_patch.Add_Click({
                 }
                 else {
                     $logBox.AppendText("Error: CD2.GOB was missing and wasn't extracted.`n")
+                    Check-Valid-Location -buttonUpdateState "control"
                     return
                 }
 
@@ -633,6 +870,7 @@ $button_patch.Add_Click({
                 }
                 else {
                     $logBox.AppendText("Error: JONES3D.GOB was missing and wasn't extracted.`n")
+                    Check-Valid-Location -buttonUpdateState "control"
                     return
                 }
 
@@ -654,6 +892,7 @@ $button_patch.Add_Click({
             $cd1_and_2_subfolders = @("3do", "cog", "hi3do", "mat", "misc", "ndy")
             $jones3d_subfolders = @("3do", "cog", "mat", "misc", "ndy")
 
+            # Let's rename the original cog folder for backup propuses.
             $cog_folder = Join-Path $textbox_location.text -ChildPath "\Cog"
             if (Test-Path -Path $cog_folder -PathType Container) {
                 # Get the new folder name with "_backup"
@@ -708,11 +947,13 @@ $button_patch.Add_Click({
                 }
                 else {
                     $logBox.AppendText("Error: NDY folder not found. Stopping the patching.`n")
+                    Check-Valid-Location -buttonUpdateState "control"
                     return
                 }
             }
             else {
                 $logBox.AppendText("Error: CND tool not found. Stopping the patching.`n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
 
@@ -745,6 +986,7 @@ $button_patch.Add_Click({
             }
             else {
                 $logBox.AppendText("Error: NDY file for level 01 not found. Stopping the patching.`n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
 
@@ -755,6 +997,7 @@ $button_patch.Add_Click({
             }
             else {
                 $logBox.AppendText("Error: NDY file for level 02 not found. Stopping the patching.`n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
 
@@ -765,6 +1008,7 @@ $button_patch.Add_Click({
             }
             else {
                 $logBox.AppendText("Error: NDY file for level 03 not found. Stopping the patching.`n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
 
@@ -775,6 +1019,7 @@ $button_patch.Add_Click({
             }
             else {
                 $logBox.AppendText("Error: NDY file for level 04 not found. Stopping the patching.`n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
 
@@ -785,6 +1030,7 @@ $button_patch.Add_Click({
             }
             else {
                 $logBox.AppendText("Error: NDY file for level 05 not found. Stopping the patching.`n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
 
@@ -795,6 +1041,7 @@ $button_patch.Add_Click({
             }
             else {
                 $logBox.AppendText("Error: NDY file for level 06 not found. Stopping the patching.`n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
 
@@ -805,6 +1052,7 @@ $button_patch.Add_Click({
             }
             else {
                 $logBox.AppendText("Error: NDY file for level 07 not found. Stopping the patching.`n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
 
@@ -815,6 +1063,7 @@ $button_patch.Add_Click({
             }
             else {
                 $logBox.AppendText("Error: NDY file for level 08 not found. Stopping the patching.`n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
 
@@ -825,6 +1074,7 @@ $button_patch.Add_Click({
             }
             else {
                 $logBox.AppendText("Error: NDY file for level 09 not found. Stopping the patching.`n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
 
@@ -835,6 +1085,7 @@ $button_patch.Add_Click({
             }
             else {
                 $logBox.AppendText("Error: NDY file for level 10 not found. Stopping the patching.`n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
 
@@ -845,6 +1096,7 @@ $button_patch.Add_Click({
             }
             else {
                 $logBox.AppendText("Error: NDY file for level 11 not found. Stopping the patching.`n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
 
@@ -855,6 +1107,7 @@ $button_patch.Add_Click({
             }
             else {
                 $logBox.AppendText("Error: NDY file for level 12 not found. Stopping the patching.`n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
 
@@ -865,6 +1118,7 @@ $button_patch.Add_Click({
             }
             else {
                 $logBox.AppendText("Error: NDY file for level 13 not found. Stopping the patching.`n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
 
@@ -875,6 +1129,7 @@ $button_patch.Add_Click({
             }
             else {
                 $logBox.AppendText("Error: NDY file for level 14 not found. Stopping the patching.`n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
 
@@ -885,6 +1140,7 @@ $button_patch.Add_Click({
             }
             else {
                 $logBox.AppendText("Error: NDY file for level 15 not found. Stopping the patching.`n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
 
@@ -895,6 +1151,7 @@ $button_patch.Add_Click({
             }
             else {
                 $logBox.AppendText("Error: NDY file for level 16 not found. Stopping the patching.`n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
 
@@ -905,6 +1162,7 @@ $button_patch.Add_Click({
             }
             else {
                 $logBox.AppendText("Error: NDY file for level 17 not found. Stopping the patching.`n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
 
@@ -915,6 +1173,7 @@ $button_patch.Add_Click({
             }
             else {
                 $logBox.AppendText("Error: NDY file for level 18 not found. Stopping the patching.`n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
 
@@ -981,6 +1240,7 @@ $button_patch.Add_Click({
             }
             catch {
                 $logBox.AppendText("Error: failure in moving the key folder. $_ . Stopping the patching.`n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
 
@@ -1004,19 +1264,7 @@ $button_patch.Add_Click({
             $logbox.AppendText("Success: shortcut has been created.`n")
 
             $logBox.AppendText("Success: patching was successful.`n")
-            $textBox_location.Enabled = $true
-            $button_location.Enabled = $true
-            $button_remember.Enabled = $true
-            $button_open.Enabled = $true
-            $button_modinstall_folder.Enabled = $true
-            $button_modinstall_zip.Enabled = $true
-            $comboBox.Enabled = $true
-            $button_enable_dev.Enabled = $true
-            $button_disable_dev.Enabled = $true
-            $button_patch.Enabled = $true
-            $button_unpatch.Enabled = $true
-            $button_shortcut.Enabled = $true
-            $button_exit.Enabled = $true
+            Check-Valid-Location -buttonUpdateState "control"
         }
     })
 
@@ -1030,19 +1278,7 @@ $tableLayoutPanel.Controls.Add($button_unpatch)
 $button_unpatch.Add_Click({
         $result = [System.Windows.Forms.MessageBox]::Show("This will undo the patching of the game done by this script. It will undo changes in the resource folder & the registry. This will also uninstall all custom levels. Be sure the the following information is correct: the path to the resource folder and the selected version for the registry. Are you certain?", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
-            $textBox_location.Enabled = $false
-            $button_location.Enabled = $false
-            $button_remember.Enabled = $false
-            $button_open.Enabled = $false
-            $button_modinstall_folder.Enabled = $false
-            $button_modinstall_zip.Enabled = $false
-            $comboBox.Enabled = $false
-            $button_enable_dev.Enabled = $false
-            $button_disable_dev.Enabled = $false
-            $button_patch.Enabled = $false
-            $button_unpatch.Enabled = $false
-            $button_shortcut.Enabled = $false
-            $button_exit.Enabled = $false
+            Check-Valid-Location -buttonUpdateState "disable"
 
             # Let's undo the renaming of the GOB files. This first array is if the user used my old version of the tool.
             $gob_backup_extract_cd1 = Join-Path $textBox_location.Text -ChildPath "\CD1_backup.gob"
@@ -1082,6 +1318,7 @@ $button_unpatch.Add_Click({
                 }
                 else {
                     $logBox.AppendText("Failure: The GOB file $($filePathToRename) doesn't exist. Can't complete the process. Exiting...`n")
+                    Check-Valid-Location -buttonUpdateState "control"
                     return
                 }
             }
@@ -1138,21 +1375,7 @@ $button_unpatch.Add_Click({
             }
 
             $logBox.AppendText("Success: Finished undoing the patch.`n")
-
-            $textBox_location.Enabled = $true
-            $button_location.Enabled = $true
-            $button_remember.Enabled = $true
-            $button_modinstall_folder.Enabled = $true
-            $button_modinstall_zip.Enabled = $true
-            $button_remember.Enabled = $true
-            $button_open.Enabled = $true
-            $comboBox.Enabled = $true
-            $button_enable_dev.Enabled = $true
-            $button_disable_dev.Enabled = $true
-            $button_patch.Enabled = $true
-            $button_unpatch.Enabled = $true
-            $button_shortcut.Enabled = $true
-            $button_exit.Enabled = $true
+            Check-Valid-Location -buttonUpdateState "control"
         }
     })
 
@@ -1185,9 +1408,12 @@ $tableLayoutBottomButtons.Controls.Add($button_shortcut)
 $button_shortcut.Add_Click({
         $result = [System.Windows.Forms.MessageBox]::Show("Are you sure you want to create a shortcut to the game on your desktop? This shortcut will open in dev mode if you patched your game or you enabled dev mode. You will need to provide the path to your resource folder of the game install!", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+            Check-Valid-Location -buttonUpdateState "disable"
+
             # Let's create said shortcut.
             if ($null -eq $textBox_location.Text) {
                 $logBox.AppendText("Error: no valid resource path provided. `n")
+                Check-Valid-Location -buttonUpdateState "control"
                 return
             }
             else {
@@ -1199,9 +1425,11 @@ $button_shortcut.Add_Click({
 
                     Create-Shortcut -ShortcutName $ShortcutName -TargetPath $dev_mode_exe_location -ShortcutFolderPath $desktop_location
                     $logbox.AppendText("Success: shortcut has been created.`n")
+                    Check-Valid-Location -buttonUpdateState "control"
                 }
                 else {
                     $logBox.AppendText("Error: no valid game executable found in the resource folder.`n")
+                    Check-Valid-Location -buttonUpdateState "control"
                     return
                 }
             }
@@ -1224,7 +1452,7 @@ $button_exit.Add_Click({
 
 # Create the credit label
 $label_credit = New-Object System.Windows.Forms.Label
-$label_credit.Text = "$title - v1.4.2 - Released 23/07/2024"
+$label_credit.Text = "$title - v1.5 - Released 23/07/2024"
 $label_credit.AutoSize = $true
 $label_credit.Dock = [System.Windows.Forms.DockStyle]::Fill
 $label_credit.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
@@ -1236,6 +1464,9 @@ $tableLayoutPanel.Controls.Add($label_credit)
 $label_credit.Add_Click({
         Start-Process "https://github.com/NekoJonez/RandomProjects/releases"
     })
+
+# Now that all is drawn, let's check the buttons for the first time.
+Check-Valid-Location -buttonUpdateState "control"
 
 # Add the TableLayoutPanel to the form
 $form.Controls.Add($tableLayoutPanel)
