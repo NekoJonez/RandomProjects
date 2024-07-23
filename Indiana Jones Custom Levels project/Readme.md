@@ -6,7 +6,7 @@
 
 <h1>Steps to start - EXE file:</h1>
 
-<p>Download the EXE file and launch it with admin permissions. Don't mind the terminal window behind the tool, that's what I need for debugging if issues arise. If you notice errors in there, feel free to report them.</p>
+<p>Download the EXE file and launch it with admin permissions. Don't mind the terminal window behind the tool, that's what I need for debugging if issues arise. If you notice errors in there, feel free to report them. You don't need to follow the steps of the PS1 file. You can skip right to "how to use" section.</p>
 
 <h1>Steps to start - PS1 file:</h1>
 
@@ -42,14 +42,14 @@ Click on the green play icon to start the script.
 
 <p>The tool will open now.</p>
 
-![image](https://github.com/user-attachments/assets/40d923f3-8661-4815-87b4-1cc2f61809d7)
+![image](https://github.com/user-attachments/assets/06b2aeb2-999f-4b10-9c6d-22fbe1e19477)
 
 Enter in the text field your exact location of the Resource folder of your Indiana Jones and the Infernal Machine installation. This is a path as an example: `D:\SteamLibrary\steamapps\common\Indiana Jones and the Infernal Machine\Resource`. You can also choose to use the "Search" button to browse to the folder. A final slash at the end is not needed and will break the script.<br>
 <p>In the dropdown underneath, select the version that install is. Depending if you have the game on Steam, GOG or used the original discs, the registry key required to patch is different. Please select the correct version. If you have already set the registry key to it's correct value, the script will skip this step :)</p><br>
 
 <p>When all values are set, click on the "Patch" button and wait for the magic to happen. If all goes well, you'll have a "Success: patching was successful." appear at the end in the logbox underneath the Patch button. If something went wrong, it's best to remove the game and reinstall it. (Or in case of GOG/Steam, remove the resource folder and verify the game files.)</p> <br>
 <br>
-<p>Other features of the tool include an way to undo the patching, enable/disable dev mod and create a shortcut to the game for custom levels & content.</p>
+<p>Other features of the tool include an way to undo the patching, installing mods via a zip file or folder, enable/disable dev mod and create a shortcut to the game for custom levels & content.</p>
 
 <h1>Issues/bugs/idea's?</h1>
 <p>If you encounter a problem, feel free to reach out to me. You can open a GitHub issue in this repo, ask me on Discord... The support will go as far as fixing issues with the patcher, not fixing issues caused by the patcher.</p>
