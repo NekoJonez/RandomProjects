@@ -1,16 +1,12 @@
 # NekoJonez presents Indiana Jones and the Infernal Machine - Automatic Patcher for custom levels.
 # Based upon the work & tools by the modders over at https://github.com/Jones3D-The-Infernal-Engine/Mods/tree/main/levels/sed
 # Written in PowerShell core 7.4.3. Will work with PowerShell 5.1 & 7+.
-# Build 1.5 - 23/07/2024
+# Build 1.5.1 - 23/09/2024
 # Visit my gaming blog: https://arpegi.wordpress.com
 
 # Function to move files while skipping existing files
 function MoveFilesAndRemoveSource {
-    param (
-        [string]$sourcePath,
-        [string]$destinationPath,
-        [string[]]$subfolders
-    )
+    param ( [string]$sourcePath, [string]$destinationPath, [string[]]$subfolders )
 
     # Get subfolders within the source path
     foreach ($subfolder in $subfolders) {
@@ -20,18 +16,12 @@ function MoveFilesAndRemoveSource {
         # Check if source subfolder exists
         if (Test-Path -Path $fullSourcePath -PathType Container) {
             # Ensure destination subfolder exists
-            if (!(Test-Path -Path $fullDestinationPath -PathType Container)) {
-                New-Item -Path $fullDestinationPath -ItemType Directory | Out-Null
-            }
+            if (!(Test-Path -Path $fullDestinationPath -PathType Container)) { New-Item -Path $fullDestinationPath -ItemType Directory | Out-Null }
 
             # Move files from source subfolder to destination subfolder
             Get-ChildItem -Path $fullSourcePath -File | ForEach-Object {
                 $destinationFile = Join-Path -Path $fullDestinationPath -ChildPath $_.Name
-
-                # Check if file already exists in destination
-                if (!(Test-Path -Path $destinationFile -PathType Leaf)) {
-                    Move-Item -Path $_.FullName -Destination $destinationFile -Force
-                }
+                if (!(Test-Path -Path $destinationFile -PathType Leaf)) { Move-Item -Path $_.FullName -Destination $destinationFile -Force } # Check if file already exists in destination
             }
         }
 
@@ -73,8 +63,7 @@ function Update-RegistryStartMode {
         # Check if the registry path exists
         if (Test-Path -Path $registryPath) {
             try {
-                # Get all properties of the registry key
-                $keyProperties = Get-ItemProperty -Path $registryPath
+                $keyProperties = Get-ItemProperty -Path $registryPath # Get all properties of the registry key
 
                 # Check if "Start mode" property exists and its value matches the desired value
                 if ($keyProperties.PSObject.Properties.Name -contains $keyName) {
@@ -106,11 +95,7 @@ function Update-RegistryStartMode {
 
 # Let's create a shortcut. Let's make a function out of this, since some AV's don't like it otherwise.
 function Create-Shortcut {
-    param (
-        [string] $ShortcutName,
-        [string] $TargetPath,
-        [string] $ShortcutFolderPath
-    )
+    param ( [string] $ShortcutName, [string] $TargetPath, [string] $ShortcutFolderPath )
 
     $ShortcutFile = Join-Path $ShortcutFolderPath "$ShortcutName.url"
 
@@ -135,11 +120,7 @@ function Load-Paths {
     )
 
     $textBox_location.Items.Clear()
-    if (Test-Path $textFilePath) {
-        Get-Content $textFilePath | ForEach-Object {
-            $textBox_location.Items.Add($_)
-        }
-    }
+    if (Test-Path $textFilePath) { Get-Content $textFilePath | ForEach-Object { $textBox_location.Items.Add($_) } }
 
     if ($pathLoadState -eq "Second") {
         Check-Valid-Location -buttonUpdateState "control"
@@ -162,10 +143,7 @@ function Update-ButtonText {
 
 # This massive function installs and copies mod files to the right location for you.
 function Install-Mods-Manually {
-    param (
-        [string]$sourcePath,
-        [string]$destinationPath
-    )
+    param ( [string]$sourcePath, [string]$destinationPath )
 
     # Define the folder array we can just move.
     $subfolders = @("3do", "cog", "hi3do", "mat", "misc", "ndy", "sound")
@@ -190,45 +168,32 @@ function Install-Mods-Manually {
 
     # Function to move files based on their extensions to their corresponding subfolders
     function Move-FilesByType {
-        param (
-            [string]$sourceFolderPath,
-            [string]$destinationBasePath,
-            [hashtable]$typeMappings
-        )
+        param ( [string]$sourceFolderPath, [string]$destinationBasePath, [hashtable]$typeMappings )
 
         foreach ($mapping in $typeMappings.GetEnumerator()) {
             $fileExtension = $mapping.Key
             $destinationSubfolders = $mapping.Value
 
-            # Ensure destination subfolders are handled as an array
-            if (-not ($destinationSubfolders -is [System.Collections.IEnumerable])) {
-                $destinationSubfolders = @($destinationSubfolders)
-            }
+            if (!($destinationSubfolders -is [System.Collections.IEnumerable])) { $destinationSubfolders = @($destinationSubfolders) } # Ensure destination subfolders are handled as an array
 
-            # Find all files with the current extension
-            $filesToMove = Get-ChildItem -Path $sourceFolderPath -Recurse -File -Filter "*$fileExtension"
+            $filesToMove = Get-ChildItem -Path $sourceFolderPath -Recurse -File -Filter "*$fileExtension" # Find all files with the current extension
             if ($filesToMove.Count -gt 0) {
                 foreach ($destFolder in $destinationSubfolders) {
                     $destinationPath = Join-Path -Path $destinationBasePath -ChildPath $destFolder
-                    if (!(Test-Path -Path $destinationPath -PathType Container)) {
-                        New-Item -Path $destinationPath -ItemType Directory | Out-Null
-                    }
+                    if (!(Test-Path -Path $destinationPath -PathType Container)) { New-Item -Path $destinationPath -ItemType Directory | Out-Null }
 
                     foreach ($file in $filesToMove) {
                         $destFilePath = Join-Path -Path $destinationPath -ChildPath $file.Name
                         if ($fileExtension -eq ".3do") {
                             if ($destFolder -eq "3do") {
-                                # Special handling for .3do files: Copy to "3do" folder
-                                Copy-Item -Path $file.FullName -Destination $destFilePath -Force
+                                Copy-Item -Path $file.FullName -Destination $destFilePath -Force # Special handling for .3do files: Copy to "3do" folder
                             }
                             elseif ($destFolder -eq "hi3do") {
-                                # Special handling for .3do files: Move to "hi3do" folder
-                                Move-Item -Path $file.FullName -Destination $destFilePath -Force
+                                Move-Item -Path $file.FullName -Destination $destFilePath -Force # Special handling for .3do files: Move to "hi3do" folder
                             }
                         }
                         else {
-                            # Move other files and overwrite if they already exist
-                            Move-Item -Path $file.FullName -Destination $destFilePath -Force
+                            Move-Item -Path $file.FullName -Destination $destFilePath -Force # Move other files and overwrite if they already exist
                         }
                     }
                 }
@@ -238,19 +203,12 @@ function Install-Mods-Manually {
 
     # Function to move the contents of the target subfolder to the destination subfolder
     function Move-SubfolderContents {
-        param (
-            [string]$sourcePath,
-            [string]$destinationPath
-        )
+        param ( [string]$sourcePath, [string]$destinationPath )
 
         try {
             # Ensure the destination path exists
-            if (!(Test-Path -Path $destinationPath -PathType Container)) {
-                New-Item -Path $destinationPath -ItemType Directory | Out-Null
-            }
-
-            # Move the contents of the source subfolder to the destination subfolder
-            Get-ChildItem -Path $sourcePath -Recurse | Move-Item -Destination $destinationPath -Force
+            if (!(Test-Path -Path $destinationPath -PathType Container)) { New-Item -Path $destinationPath -ItemType Directory | Out-Null }
+            Get-ChildItem -Path $sourcePath -Recurse | Move-Item -Destination $destinationPath -Force # Move the contents of the source subfolder to the destination subfolder
         }
         catch {
             Write-Host "Error moving contents from $sourcePath to $destinationPath : $_"
@@ -261,14 +219,10 @@ function Install-Mods-Manually {
     foreach ($subfolder in $subfolders) {
         $sourceSubfolderPath = Join-Path -Path $sourcePath -ChildPath $subfolder
         $destinationSubfolderPath = Join-Path -Path $destinationPath -ChildPath $subfolder
-
-        if (Test-Path -Path $sourceSubfolderPath -PathType Container) {
-            Move-SubfolderContents -sourcePath $sourceSubfolderPath -destinationPath $destinationSubfolderPath
-        }
+        if (Test-Path -Path $sourceSubfolderPath -PathType Container) { Move-SubfolderContents -sourcePath $sourceSubfolderPath -destinationPath $destinationSubfolderPath }
     }
 
-    # Move files based on their types
-    Move-FilesByType -sourceFolderPath $sourcePath -destinationBasePath $destinationPath -typeMappings $fileTypeMappings
+    Move-FilesByType -sourceFolderPath $sourcePath -destinationBasePath $destinationPath -typeMappings $fileTypeMappings # Move files based on their types
 }
 
 # Let's update the buttons on the form.
@@ -332,12 +286,8 @@ function Check-Valid-Location {
     }
 }
 
-
-# Let's show a form on screen.
-Add-Type -AssemblyName System.Windows.Forms
-
-# This is the title.
-$title = "Indiana Jones and the Infernal Machine - Mod patcher"
+Add-Type -AssemblyName System.Windows.Forms # Let's show a form on screen.
+$title = "Indiana Jones and the Infernal Machine - Mod patcher" # This is the title.
 
 # Let's exit when we don't have admin permissions, since we need to have them to edit registry.
 if (!(New-Object System.Security.Principal.WindowsPrincipal([System.Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -415,10 +365,7 @@ $button_location.Add_Click({
         $folderBrowser = New-Object System.Windows.Forms.FolderBrowserDialog
         $folderBrowser.Description = "Select the Indiana Jones and the Infernal Machine resource folder"
         $folderBrowser.ShowNewFolderButton = $false
-
-        if ($folderBrowser.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-            $textBox_location.Text = $folderBrowser.SelectedPath
-        }
+        if ($folderBrowser.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { $textBox_location.Text = $folderBrowser.SelectedPath }
     })
 
 # Create a button for the user to remember the resources folder
@@ -428,8 +375,7 @@ $button_remember.AutoSize = $true
 $button_remember.Cursor = [System.Windows.Forms.Cursors]::Hand
 $tableLayoutPanelLocation.Controls.Add($button_remember)
 
-# What's that textfile that saved remembered paths?
-$textFilePath = "Indy3DPatcherPaths.txt"
+$textFilePath = "Indy3DPatcherPaths.txt" # What's that textfile that saved remembered paths?
 
 # Add the click event for the remember button. Work with an elseif here, otherwise this stinker goes from remember mode directly into forget mode.
 $button_remember.Add_Click({
@@ -445,8 +391,7 @@ $button_remember.Add_Click({
 
                     $control_check_location = Join-Path $enteredPath -ChildPath "\Indy3D.exe"
 
-                    # Read the existing paths from the text file
-                    $existingPaths = if (Test-Path $textFilePath) { Get-Content $textFilePath } else { @() }
+                    $existingPaths = if (Test-Path $textFilePath) { Get-Content $textFilePath } else { @() } # Read the existing paths from the text file
 
                     if ($existingPaths -contains $enteredPath) {
                         [System.Windows.Forms.MessageBox]::Show("This location already exists.", $title)
@@ -499,8 +444,7 @@ $button_remember.Add_Click({
         }
     })
 
-# If the user has paths, let's load them.
-Load-Paths -pathLoadState "First"
+Load-Paths -pathLoadState "First" # If the user has paths, let's load them.
 
 # Create a button for the user to open the resources folder
 $button_open = New-Object System.Windows.Forms.Button
@@ -513,10 +457,7 @@ $button_open.Add_Click({
         $enteredPath = $textBox_location.Text
         if (!([string]::IsNullOrWhiteSpace($textBox_location.Text))) {
             $control_check_location = Join-Path $enteredPath -ChildPath "\Indy3D.exe"
-
-            if (Test-Path -Path $control_check_location) {
-                Invoke-Item -Path $enteredPath
-            }
+            if (Test-Path -Path $control_check_location) { Invoke-Item -Path $enteredPath }
         }
         else {
             [System.Windows.Forms.MessageBox]::Show("An invalid path is provided, this can't be opened.", $title)
@@ -608,20 +549,15 @@ $button_modinstall_zip.Cursor = [System.Windows.Forms.Cursors]::Hand
 $tableLayoutPanelModInstall.Controls.Add($button_modinstall_zip)
 
 $button_modinstall_zip.Add_Click({
-    Check-Valid-Location -buttonUpdateState "disable"
+        Check-Valid-Location -buttonUpdateState "disable"
 
         # Define the path to check and the initial extraction path
         $basePath = $textBox_location.Text
         $path_control = Join-Path -Path $basePath -ChildPath "Indy3D.exe"
 
         if (Test-Path -Path $path_control) {
-            # Create a temporary folder in a safe location
-            $tempFolder = "C:\Temp_Indy_Mod"
-
-            # Create the directory if it does not exist
-            if (!(Test-Path -Path $tempFolder)) {
-                New-Item -Path $tempFolder -ItemType Directory | Out-Null
-            }
+            $tempFolder = "C:\Temp_Indy_Mod" # Create a temporary folder in a safe location
+            if (!(Test-Path -Path $tempFolder)) { New-Item -Path $tempFolder -ItemType Directory | Out-Null } # Create the directory if it does not exist
 
             # Open file dialog for selecting a ZIP file
             $openFileDialog = New-Object System.Windows.Forms.OpenFileDialog
@@ -707,13 +643,9 @@ $button_enable_dev.Add_Click({
             $enableDevMode.$null
             $enableDevMode = $true
 
-            # Call the function and store the return messages
-            $returnMessages = Update-RegistryStartMode -selectedIndex $selectedIndex -EnableDevMode $enableDevMode
+            $returnMessages = Update-RegistryStartMode -selectedIndex $selectedIndex -EnableDevMode $enableDevMode # Call the function and store the return messages
+            foreach ($message in $returnMessages) { $logBox.AppendText("$message`n") } # Display the return messages to the user
 
-            # Display the return messages to the user
-            foreach ($message in $returnMessages) {
-                $logBox.AppendText("$message`n")
-            }
             Check-Valid-Location -buttonUpdateState "control"
         }
     })
@@ -734,13 +666,9 @@ $button_disable_dev.Add_Click({
             $enableDevMode.$null
             $enableDevMode = $false
 
-            # Call the function and store the return messages
-            $returnMessages = Update-RegistryStartMode -selectedIndex $selectedIndex -EnableDevMode $enableDevMode
+            $returnMessages = Update-RegistryStartMode -selectedIndex $selectedIndex -EnableDevMode $enableDevMode # Call the function and store the return messages
 
-            # Display the return messages to the user
-            foreach ($message in $returnMessages) {
-                $logBox.AppendText("$message`n")
-            }
+            foreach ($message in $returnMessages) { $logBox.AppendText("$message`n") } # Display the return messages to the user
             Check-Valid-Location -buttonUpdateState "control"
         }
     })
@@ -884,11 +812,7 @@ $button_patch.Add_Click({
             $filePathsToRemoveFolders = @($cd1_gob_location, $cd2_gob_location, $jones3d_gob_location)
 
             # Let's remove the extraction folders.
-            foreach ($filePathsToRemoveFolder in $filePathsToRemoveFolders) {
-                if (Test-Path -Path $filePathsToRemoveFolder) {
-                    Remove-Item -Path $filePathsToRemoveFolder -Recurse -Force
-                }
-            }
+            foreach ($filePathsToRemoveFolder in $filePathsToRemoveFolders) { if (Test-Path -Path $filePathsToRemoveFolder) { Remove-Item -Path $filePathsToRemoveFolder -Recurse -Force } }
 
             # Rename files using foreach loop, after this step 2 is done.
             foreach ($filePathToRename in $filePathsToRename) {
@@ -1190,11 +1114,7 @@ $button_patch.Add_Click({
 
             # Let's remove the extraction folders.
             $CNDToRemoveFolders = @($cnd_folder_extract_lvl01, $cnd_folder_extract_lvl02, $cnd_folder_extract_lvl03, $cnd_folder_extract_lvl04, $cnd_folder_extract_lvl05, $cnd_folder_extract_lvl06, $cnd_folder_extract_lvl07, $cnd_folder_extract_lvl08, $cnd_folder_extract_lvl09, $cnd_folder_extract_lvl10, $cnd_folder_extract_lvl11, $cnd_folder_extract_lvl12, $cnd_folder_extract_lvl13, $cnd_folder_extract_lvl14, $cnd_folder_extract_lvl15, $cnd_folder_extract_lvl16, $cnd_folder_extract_lvl17, $cnd_folder_extract_lvl18)
-            foreach ($CNDToRemoveFolder in $CNDToRemoveFolders) {
-                if (Test-Path -Path $CNDToRemoveFolder) {
-                    Remove-Item -Path $CNDToRemoveFolder -Recurse -Force
-                }
-            }
+            foreach ($CNDToRemoveFolder in $CNDToRemoveFolders) { if (Test-Path -Path $CNDToRemoveFolder) { Remove-Item -Path $CNDToRemoveFolder -Recurse -Force } }
 
             # Now, let's move that Key folder.
             $key_folder_temp = Join-Path -Path $textBox_location.Text -ChildPath "\key"
@@ -1215,13 +1135,9 @@ $button_patch.Add_Click({
             $selectedIndex = $comboBox.SelectedIndex
             $enableDevMode = $true
 
-            # Call the function and store the return messages
-            $returnMessages = Update-RegistryStartMode -selectedIndex $selectedIndex -EnableDevMode $enableDevMode
+            $returnMessages = Update-RegistryStartMode -selectedIndex $selectedIndex -EnableDevMode $enableDevMode # Call the function and store the return messages
 
-            # Display the return messages to the user
-            foreach ($message in $returnMessages) {
-                $logBox.AppendText("$message`n")
-            }
+            foreach ($message in $returnMessages) { $logBox.AppendText("$message`n") } # Display the return messages to the user
 
             $dev_mode_exe_location = Join-Path $textBox_location.Text -ChildPath "Indy3D.exe"
             $shortcutName = "Indiana Jones and the Infernal Machine - Dev mode"
@@ -1259,8 +1175,7 @@ $button_unpatch.Add_Click({
             $gob_bak_extract_jones3d = Join-Path $textBox_location.Text -ChildPath "\JONES3D.gob.bak"
             $fileBakPathsToRename = @($gob_bak_extract_cd1, $gob_bak_extract_cd2, $gob_bak_extract_jones3d)
 
-            # Combine both arrays for the renaming process
-            $filePathsToRename = $fileBackupPathsToRename + $fileBakPathsToRename
+            $filePathsToRename = $fileBackupPathsToRename + $fileBakPathsToRename # Combine both arrays for the renaming process
 
             foreach ($filePathToRename in $filePathsToRename) {
                 if (Test-Path -Path $filePathToRename) {
@@ -1269,12 +1184,10 @@ $button_unpatch.Add_Click({
                     $fileExtension = [System.IO.Path]::GetExtension($filePathToRename)
 
                     if ($fileName.EndsWith("_backup")) {
-                        # Remove "_backup" from the filename
-                        $newFileName = $fileName.Substring(0, $fileName.Length - 7) + $fileExtension
+                        $newFileName = $fileName.Substring(0, $fileName.Length - 7) + $fileExtension # Remove "_backup" from the filename
                     }
                     elseif ($fileExtension -eq ".bak") {
-                        # Change the .bak extension to .gob
-                        $newFileName = $fileName + ".gob"
+                        $newFileName = $fileName + ".gob" # Change the .bak extension to .gob
                     }
                     else {
                         continue
@@ -1289,7 +1202,6 @@ $button_unpatch.Add_Click({
                     return
                 }
             }
-
 
             $logBox.AppendText("Success: reverted the backup GOB files to it's original state.`n")
 
@@ -1311,11 +1223,7 @@ $button_unpatch.Add_Click({
             $ndy_mod_folder = Join-Path -Path $textBox_location.Text -ChildPath "\ndy"
             $sound_mod_folder = Join-Path -Path $textBox_location.Text -ChildPath "\sound"
             $ModFoldersToRemove = @($3do_mod_folder, $hi3do_mod_folder, $mat_mod_folder, $misc_mod_folder, $ndy_mod_folder, $sound_mod_folder)
-            foreach ($ModFolderToRemove in $ModFoldersToRemove) {
-                if (Test-Path -Path $ModFolderToRemove) {
-                    Remove-Item -Path $ModFolderToRemove -Recurse -Force
-                }
-            }
+            foreach ($ModFolderToRemove in $ModFoldersToRemove) { if (Test-Path -Path $ModFolderToRemove) { Remove-Item -Path $ModFolderToRemove -Recurse -Force } }
 
             $logBox.AppendText("Success: Removed all mod extracted folders.`n")
 
@@ -1323,23 +1231,15 @@ $button_unpatch.Add_Click({
             $ma_tool = Join-Path $textBox_location.Text -ChildPath "matool.exe"
             $Tools_Temp_Path = $textBox_location.Text + "\urgon-windows-x86-64.zip"
             $ToolsToClean = @($gobext_tool, $ma_tool, $Tools_Temp_Path)
-            foreach ($ToolToClean in $ToolsToClean) {
-                if (Test-Path -Path $ToolToClean) {
-                    Remove-Item -Path $ToolToClean -Recurse -Force
-                }
-            }
+            foreach ($ToolToClean in $ToolsToClean) { if (Test-Path -Path $ToolToClean) { Remove-Item -Path $ToolToClean -Recurse -Force } }
 
             # Now we are going to do the reg edit fix.
             $selectedIndex = $comboBox.SelectedIndex
             $enableDevMode = $false
 
-            # Call the function and store the return messages
-            $returnMessages = Update-RegistryStartMode -selectedIndex $selectedIndex -EnableDevMode $enableDevMode
+            $returnMessages = Update-RegistryStartMode -selectedIndex $selectedIndex -EnableDevMode $enableDevMode # Call the function and store the return messages
 
-            # Display the return messages to the user
-            foreach ($message in $returnMessages) {
-                $logBox.AppendText("$message`n")
-            }
+            foreach ($message in $returnMessages) { $logBox.AppendText("$message`n") } # Display the return messages to the user
 
             $logBox.AppendText("Success: Finished undoing the patch.`n")
             Check-Valid-Location -buttonUpdateState "control"
@@ -1412,31 +1312,22 @@ $tableLayoutBottomButtons.Controls.Add($button_exit)
 
 $button_exit.Add_Click({
         $result = [System.Windows.Forms.MessageBox]::Show("Are you sure you want to exit?", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
-        if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
-            $form.Close()
-        }
+        if ($result -eq [System.Windows.Forms.DialogResult]::Yes) { $form.Close() }
     })
 
 # Create the credit label
 $label_credit = New-Object System.Windows.Forms.Label
-$label_credit.Text = "$title - v1.5 - Released 23/07/2024"
+$label_credit.Text = "$title - v1.5.1 - Released 23/09/2024"
 $label_credit.AutoSize = $true
 $label_credit.Dock = [System.Windows.Forms.DockStyle]::Fill
 $label_credit.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
 $label_credit.ForeColor = [System.Drawing.Color]::Blue
 $label_credit.Cursor = [System.Windows.Forms.Cursors]::Hand
+$label_credit.Add_Click({ Start-Process "https://github.com/NekoJonez/RandomProjects/releases" })
 $tableLayoutPanel.Controls.Add($label_credit)
 
-# Add the event handler for the Click event
-$label_credit.Add_Click({
-        Start-Process "https://github.com/NekoJonez/RandomProjects/releases"
-    })
-
-# Now that all is drawn, let's check the buttons for the first time.
-Check-Valid-Location -buttonUpdateState "control"
-
-# Add the TableLayoutPanel to the form
-$form.Controls.Add($tableLayoutPanel)
+Check-Valid-Location -buttonUpdateState "control" # Now that all is drawn, let's check the buttons for the first time.
+$form.Controls.Add($tableLayoutPanel) # Add the TableLayoutPanel to the form
 
 # Display the form
 $form.Add_Shown({ $form.Activate() })
