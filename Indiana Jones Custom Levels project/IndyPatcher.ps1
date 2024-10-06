@@ -1,7 +1,7 @@
 # NekoJonez presents Indiana Jones and the Infernal Machine - Automatic Patcher for custom levels.
 # Based upon the work & tools by the modders over at https://github.com/Jones3D-The-Infernal-Engine/Mods/tree/main/levels/sed
 # Written in PowerShell core 7.4.3. Will work with PowerShell 5.1 & 7+.
-# Build 1.5.1 - 23/09/2024
+# Build 1.6 - 06/10/2024
 # Visit my gaming blog: https://arpegi.wordpress.com
 
 # Function to move files while skipping existing files
@@ -15,8 +15,7 @@ function MoveFilesAndRemoveSource {
 
         # Check if source subfolder exists
         if (Test-Path -Path $fullSourcePath -PathType Container) {
-            # Ensure destination subfolder exists
-            if (!(Test-Path -Path $fullDestinationPath -PathType Container)) { New-Item -Path $fullDestinationPath -ItemType Directory | Out-Null }
+            if (!(Test-Path -Path $fullDestinationPath -PathType Container)) { New-Item -Path $fullDestinationPath -ItemType Directory | Out-Null } # Ensure destination subfolder exists
 
             # Move files from source subfolder to destination subfolder
             Get-ChildItem -Path $fullSourcePath -File | ForEach-Object {
@@ -34,11 +33,8 @@ function MoveFilesAndRemoveSource {
 # Let's edit the reg key. We give the reg path as a parameter since it's different per edition of the game.
 function Update-RegistryStartMode {
     param(
-        [Parameter(Mandatory = $true)]
-        [int]$selectedIndex,
-
-        [Parameter(Mandatory = $true)]
-        [bool]$EnableDevMode
+        [Parameter(Mandatory = $true)] [int]$selectedIndex,
+        [Parameter(Mandatory = $true)] [bool]$EnableDevMode
     )
 
     # Determine the registry paths based on the selected index
@@ -97,8 +93,7 @@ function Update-RegistryStartMode {
 function Create-Shortcut {
     param ( [string] $ShortcutName, [string] $TargetPath, [string] $ShortcutFolderPath )
 
-    $ShortcutFile = Join-Path $ShortcutFolderPath "$ShortcutName.url"
-
+    $ShortcutFile = Join-Path $ShortcutFolderPath "$ShortcutName.lnk"
     if (!(Test-Path -Path $ShortcutFile -PathType Leaf)) {
         try {
             $WshShell = New-Object -ComObject WScript.Shell
@@ -114,10 +109,7 @@ function Create-Shortcut {
 
 # Function to load paths from the text file into the ComboBox
 function Load-Paths {
-    param (
-        [ValidateSet("first", "second")]
-        [string] $pathLoadState
-    )
+    param ( [ValidateSet("first", "second")] [string] $pathLoadState )
 
     $textBox_location.Items.Clear()
     if (Test-Path $textFilePath) { Get-Content $textFilePath | ForEach-Object { $textBox_location.Items.Add($_) } }
@@ -227,10 +219,7 @@ function Install-Mods-Manually {
 
 # Let's update the buttons on the form.
 function Check-Valid-Location {
-    param (
-        [ValidateSet("control", "disable")]
-        [string] $buttonUpdateState
-    )
+    param ( [ValidateSet("control", "disable")] [string] $buttonUpdateState )
 
     if ($buttonUpdateState -eq "control") {
         $valid_path.$null
@@ -1284,9 +1273,8 @@ $button_shortcut.Add_Click({
                 return
             }
             else {
-                $dev_mode_exe_location = Join-Path $textBox_location.Text -ChildPath "\Indy3D.exe"
+                $dev_mode_exe_location = $textBox_location.Text + "\Indy3D.exe"
                 if (Test-Path -Path $dev_mode_exe_location) {
-                    $dev_mode_exe_location = Join-Path $textBox_location.Text -ChildPath "Indy3D.exe"
                     $shortcutName = "Indiana Jones and the Infernal Machine - Dev mode"
                     $desktop_location = [Environment]::GetFolderPath("Desktop")
 
@@ -1317,7 +1305,7 @@ $button_exit.Add_Click({
 
 # Create the credit label
 $label_credit = New-Object System.Windows.Forms.Label
-$label_credit.Text = "$title - v1.5.1 - Released 23/09/2024"
+$label_credit.Text = "$title - v1.6 - Released 06/10/2024"
 $label_credit.AutoSize = $true
 $label_credit.Dock = [System.Windows.Forms.DockStyle]::Fill
 $label_credit.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
@@ -1328,7 +1316,5 @@ $tableLayoutPanel.Controls.Add($label_credit)
 
 Check-Valid-Location -buttonUpdateState "control" # Now that all is drawn, let's check the buttons for the first time.
 $form.Controls.Add($tableLayoutPanel) # Add the TableLayoutPanel to the form
-
-# Display the form
 $form.Add_Shown({ $form.Activate() })
-[System.Windows.Forms.Application]::Run($form)
+[System.Windows.Forms.Application]::Run($form) # Display the form

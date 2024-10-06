@@ -1,5 +1,12 @@
 Version history patcher
 
+v1.6 - 06/10/2024
+
+* Improved: Various pieces of code are made an one liner.
+* Fix: Sometimes AV's saw the tool as a false positive.
+* Fix: The game shortcut sometimes failed creating correctly.
+* Fix: The filenames of the backup files was incorrect.
+
 v1.5 - 23/07/2024
 
 * Improved: The buttons of the tool will now be disabled when you provide an invalid resource location.
