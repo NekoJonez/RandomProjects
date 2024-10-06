@@ -809,7 +809,7 @@ $button_patch.Add_Click({
                     $fileDirectory = [System.IO.Path]::GetDirectoryName($filePathToRename)
                     $fileName = [System.IO.Path]::GetFileNameWithoutExtension($filePathToRename)
 
-                    $newFileName = "$fileName.bak"
+                    $newFileName = "$fileName.gob.bak"
                     $newFilePath = [System.IO.Path]::Combine($fileDirectory, $newFileName)
 
                     Rename-Item -Path $filePathToRename -NewName $newFilePath -Force
