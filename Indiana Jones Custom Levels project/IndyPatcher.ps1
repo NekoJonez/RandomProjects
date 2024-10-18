@@ -1,7 +1,7 @@
 # NekoJonez presents Indiana Jones and the Infernal Machine - Automatic Patcher for custom levels.
 # Based upon the work & tools by the modders over at https://github.com/Jones3D-The-Infernal-Engine/Mods/tree/main/levels/sed
 # Written in PowerShell core 7.4.3. Will work with PowerShell 5.1 & 7+.
-# Build 1.6 - 06/10/2024
+# Build 1.6.1 - 18/10/2024
 # Visit my gaming blog: https://arpegi.wordpress.com
 
 # Function to move files while skipping existing files
@@ -32,10 +32,7 @@ function MoveFilesAndRemoveSource {
 
 # Let's edit the reg key. We give the reg path as a parameter since it's different per edition of the game.
 function Update-RegistryStartMode {
-    param(
-        [Parameter(Mandatory = $true)] [int]$selectedIndex,
-        [Parameter(Mandatory = $true)] [bool]$EnableDevMode
-    )
+    param( [Parameter(Mandatory = $true)] [int]$selectedIndex, [Parameter(Mandatory = $true)] [bool]$EnableDevMode )
 
     # Determine the registry paths based on the selected index
     switch ($selectedIndex) {
@@ -347,15 +344,13 @@ $button_location = New-Object System.Windows.Forms.Button
 $button_location.Text = "Browse"
 $button_location.AutoSize = $true
 $button_location.Cursor = [System.Windows.Forms.Cursors]::Hand
-$tableLayoutPanelLocation.Controls.Add($button_location)
-
-# Add the click event for the browse button
 $button_location.Add_Click({
         $folderBrowser = New-Object System.Windows.Forms.FolderBrowserDialog
         $folderBrowser.Description = "Select the Indiana Jones and the Infernal Machine resource folder"
         $folderBrowser.ShowNewFolderButton = $false
         if ($folderBrowser.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { $textBox_location.Text = $folderBrowser.SelectedPath }
     })
+$tableLayoutPanelLocation.Controls.Add($button_location)
 
 # Create a button for the user to remember the resources folder
 $button_remember = New-Object System.Windows.Forms.Button
@@ -440,8 +435,6 @@ $button_open = New-Object System.Windows.Forms.Button
 $button_open.Text = "Open"
 $button_open.AutoSize = $true
 $button_open.Cursor = [System.Windows.Forms.Cursors]::Hand
-$tableLayoutPanelLocation.Controls.Add($button_open)
-
 $button_open.Add_Click({
         $enteredPath = $textBox_location.Text
         if (!([string]::IsNullOrWhiteSpace($textBox_location.Text))) {
@@ -478,8 +471,6 @@ $button_modinstall_folder = New-Object System.Windows.Forms.Button
 $button_modinstall_folder.Text = "Folder"
 $button_modinstall_folder.Dock = [System.Windows.Forms.DockStyle]::Fill
 $button_modinstall_folder.Cursor = [System.Windows.Forms.Cursors]::Hand
-$tableLayoutPanelModInstall.Controls.Add($button_modinstall_folder)
-
 $button_modinstall_folder.Add_Click({
         Check-Valid-Location -buttonUpdateState "disable"
 
@@ -529,14 +520,13 @@ $button_modinstall_folder.Add_Click({
             }
         }
     })
+$tableLayoutPanelModInstall.Controls.Add($button_modinstall_folder)
 
 # With this button, the user can install mods via a downloaded ZIP folder.
 $button_modinstall_zip = New-Object System.Windows.Forms.Button
 $button_modinstall_zip.Text = "Zip"
 $button_modinstall_zip.Dock = [System.Windows.Forms.DockStyle]::Fill
 $button_modinstall_zip.Cursor = [System.Windows.Forms.Cursors]::Hand
-$tableLayoutPanelModInstall.Controls.Add($button_modinstall_zip)
-
 $button_modinstall_zip.Add_Click({
         Check-Valid-Location -buttonUpdateState "disable"
 
@@ -586,6 +576,7 @@ $button_modinstall_zip.Add_Click({
             return
         }
     })
+$tableLayoutPanelModInstall.Controls.Add($button_modinstall_zip)
 
 # Create a label for the registry key
 $label_regkey = New-Object System.Windows.Forms.Label
@@ -621,8 +612,6 @@ $button_enable_dev = New-Object System.Windows.Forms.Button
 $button_enable_dev.Text = "Enable dev mode"
 $button_enable_dev.Dock = [System.Windows.Forms.DockStyle]::Fill
 $button_enable_dev.Cursor = [System.Windows.Forms.Cursors]::Hand
-$tableLayoutPanelRegKey.Controls.Add($button_enable_dev)
-
 $button_enable_dev.Add_Click({
         $result = [System.Windows.Forms.MessageBox]::Show("This will patch the registry so the dev mode is enabled. Are you want to sure you want to continue?", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
@@ -638,14 +627,13 @@ $button_enable_dev.Add_Click({
             Check-Valid-Location -buttonUpdateState "control"
         }
     })
+$tableLayoutPanelRegKey.Controls.Add($button_enable_dev)
 
 # Create a button to disable the dev mode.
 $button_disable_dev = New-Object System.Windows.Forms.Button
 $button_disable_dev.Text = "Disable dev mode"
 $button_disable_dev.Dock = [System.Windows.Forms.DockStyle]::Fill
 $button_disable_dev.Cursor = [System.Windows.Forms.Cursors]::Hand
-$tableLayoutPanelRegKey.Controls.Add($button_disable_dev)
-
 $button_disable_dev.Add_Click({
         $result = [System.Windows.Forms.MessageBox]::Show("This will patch the registry so the dev mode is disabled. Are you sure you want to continue?", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
@@ -661,15 +649,13 @@ $button_disable_dev.Add_Click({
             Check-Valid-Location -buttonUpdateState "control"
         }
     })
+$tableLayoutPanelRegKey.Controls.Add($button_disable_dev)
 
 # Create a button to start the patching proceess
 $button_patch = New-Object System.Windows.Forms.Button
 $button_patch.Text = "Patch"
 $button_patch.Dock = [System.Windows.Forms.DockStyle]::Fill
 $button_patch.Cursor = [System.Windows.Forms.Cursors]::Hand
-$tableLayoutPanel.Controls.Add($button_patch)
-
-# Add button click event
 $button_patch.Add_Click({
         $result = [System.Windows.Forms.MessageBox]::Show("This will start the patching process with the selected values. Are you certain? If something goes wrong, you'll have to restart the tool.", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
@@ -677,10 +663,7 @@ $button_patch.Add_Click({
 
             if ($textBox_location.Text) {
                 $location_checker = Join-Path -Path $textBox_location.Text -ChildPath "\Indy3D.exe"
-                if (Test-Path -Path $location_checker) {
-                    # We can continue, it's most likely the installation folder. We could implement it better, but for this version I feel lazy.
-                }
-                else {
+                if (!(Test-Path -Path $location_checker)) {
                     $logBox.AppendText("Error: Invalid resource path provided. Stopping pathing procedure.`n")
                     Check-Valid-Location -buttonUpdateState "control"
                     return
@@ -716,8 +699,7 @@ $button_patch.Add_Click({
                 return
             }
 
-            # Let's go to that resource folder.
-            Set-Location $textBox_location.Text
+            Set-Location $textBox_location.Text # Let's go to that resource folder.
 
             # Let's first extract those GOB files. Since, this tool doesn't really work with extracting to the desired folder, let's move the files afterwards.
             $gob_tool_test = Join-Path $textBox_location.Text -ChildPath "\gobext.exe"
@@ -1139,14 +1121,13 @@ $button_patch.Add_Click({
             Check-Valid-Location -buttonUpdateState "control"
         }
     })
+$tableLayoutPanel.Controls.Add($button_patch)
 
 # Create a button to undo the patch process
 $button_unpatch = New-Object System.Windows.Forms.Button
 $button_unpatch.Text = "Undo patch"
 $button_unpatch.Dock = [System.Windows.Forms.DockStyle]::Fill
 $button_unpatch.Cursor = [System.Windows.Forms.Cursors]::Hand
-$tableLayoutPanel.Controls.Add($button_unpatch)
-
 $button_unpatch.Add_Click({
         $result = [System.Windows.Forms.MessageBox]::Show("This will undo the patching of the game done by this script. It will undo changes in the resource folder & the registry. This will also uninstall all custom levels. Be sure the the following information is correct: the path to the resource folder and the selected version for the registry. Are you certain?", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
@@ -1165,7 +1146,6 @@ $button_unpatch.Add_Click({
             $fileBakPathsToRename = @($gob_bak_extract_cd1, $gob_bak_extract_cd2, $gob_bak_extract_jones3d)
 
             $filePathsToRename = $fileBackupPathsToRename + $fileBakPathsToRename # Combine both arrays for the renaming process
-
             foreach ($filePathToRename in $filePathsToRename) {
                 if (Test-Path -Path $filePathToRename) {
                     $fileDirectory = [System.IO.Path]::GetDirectoryName($filePathToRename)
@@ -1234,6 +1214,7 @@ $button_unpatch.Add_Click({
             Check-Valid-Location -buttonUpdateState "control"
         }
     })
+$tableLayoutPanel.Controls.Add($button_unpatch)
 
 # Create a text box for logs
 $logBox = New-Object System.Windows.Forms.TextBox
@@ -1259,8 +1240,6 @@ $button_shortcut = New-Object System.Windows.Forms.Button
 $button_shortcut.Text = "Create shortcut for dev mode"
 $button_shortcut.Dock = [System.Windows.Forms.DockStyle]::Fill
 $button_shortcut.Cursor = [System.Windows.Forms.Cursors]::Hand
-$tableLayoutBottomButtons.Controls.Add($button_shortcut)
-
 $button_shortcut.Add_Click({
         $result = [System.Windows.Forms.MessageBox]::Show("Are you sure you want to create a shortcut to the game on your desktop? This shortcut will open in dev mode if you patched your game or you enabled dev mode. You will need to provide the path to your resource folder of the game install!", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
@@ -1290,22 +1269,22 @@ $button_shortcut.Add_Click({
             }
         }
     })
+$tableLayoutBottomButtons.Controls.Add($button_shortcut)
 
 # Create an exit button.
 $button_exit = New-Object System.Windows.Forms.Button
 $button_exit.Text = "Exit tool"
 $button_exit.Dock = [System.Windows.Forms.DockStyle]::Fill
 $button_exit.Cursor = [System.Windows.Forms.Cursors]::Hand
-$tableLayoutBottomButtons.Controls.Add($button_exit)
-
 $button_exit.Add_Click({
         $result = [System.Windows.Forms.MessageBox]::Show("Are you sure you want to exit?", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) { $form.Close() }
     })
+$tableLayoutBottomButtons.Controls.Add($button_exit)
 
 # Create the credit label
 $label_credit = New-Object System.Windows.Forms.Label
-$label_credit.Text = "$title - v1.6 - Released 06/10/2024"
+$label_credit.Text = "$title - v1.6.1 - Released 18/10/2024"
 $label_credit.AutoSize = $true
 $label_credit.Dock = [System.Windows.Forms.DockStyle]::Fill
 $label_credit.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
