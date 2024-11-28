@@ -1,7 +1,7 @@
 # NekoJonez presents Indiana Jones and the Infernal Machine - Automatic Patcher for custom levels.
 # Based upon the work & tools by the modders over at https://github.com/Jones3D-The-Infernal-Engine/Mods/tree/main/levels/sed
 # Written in PowerShell core 7.4.3. Will work with PowerShell 5.1 & 7+.
-# Build 1.6.1 - 18/10/2024
+# Build 1.6.1 - 28/11/2024
 # Visit my gaming blog: https://arpegi.wordpress.com
 
 # Function to move files while skipping existing files
@@ -24,9 +24,8 @@ function MoveFilesAndRemoveSource {
             }
         }
 
-        # Remove the source subfolder after moving its contents
         # TODO: Checking why it doesn't remove the folder here?
-        Remove-Item -Path $fullSourcePath -Recurse -Force
+        Remove-Item -Path $fullSourcePath -Recurse -Force # Remove the source subfolder after moving its contents
     }
 }
 
@@ -134,8 +133,7 @@ function Update-ButtonText {
 function Install-Mods-Manually {
     param ( [string]$sourcePath, [string]$destinationPath )
 
-    # Define the folder array we can just move.
-    $subfolders = @("3do", "cog", "hi3do", "mat", "misc", "ndy", "sound")
+    $subfolders = @("3do", "cog", "hi3do", "mat", "misc", "ndy", "sound") # Define the folder array we can just move.
 
     # Define file type to destination mappings
     $fileTypeMappings = @{
@@ -195,8 +193,7 @@ function Install-Mods-Manually {
         param ( [string]$sourcePath, [string]$destinationPath )
 
         try {
-            # Ensure the destination path exists
-            if (!(Test-Path -Path $destinationPath -PathType Container)) { New-Item -Path $destinationPath -ItemType Directory | Out-Null }
+            if (!(Test-Path -Path $destinationPath -PathType Container)) { New-Item -Path $destinationPath -ItemType Directory | Out-Null } # Ensure the destination path exists
             Get-ChildItem -Path $sourcePath -Recurse | Move-Item -Destination $destinationPath -Force # Move the contents of the source subfolder to the destination subfolder
         }
         catch {
@@ -372,9 +369,7 @@ $button_remember.Add_Click({
                 $result = [System.Windows.Forms.MessageBox]::Show("Are you sure you want to remember this location?", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
                 if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
                     $enteredPath = $textBox_location.Text
-
                     $control_check_location = Join-Path $enteredPath -ChildPath "\Indy3D.exe"
-
                     $existingPaths = if (Test-Path $textFilePath) { Get-Content $textFilePath } else { @() } # Read the existing paths from the text file
 
                     if ($existingPaths -contains $enteredPath) {
@@ -1284,7 +1279,7 @@ $tableLayoutBottomButtons.Controls.Add($button_exit)
 
 # Create the credit label
 $label_credit = New-Object System.Windows.Forms.Label
-$label_credit.Text = "$title - v1.6.1 - Released 18/10/2024"
+$label_credit.Text = "$title - v1.6.1 - Released 28/11/2024"
 $label_credit.AutoSize = $true
 $label_credit.Dock = [System.Windows.Forms.DockStyle]::Fill
 $label_credit.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
