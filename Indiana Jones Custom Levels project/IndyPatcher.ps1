@@ -108,7 +108,7 @@ function Load-Paths {
     param ( [ValidateSet("first", "second")] [string] $pathLoadState )
 
     $textBox_location.Items.Clear()
-    if (Test-Path $textFilePath) { Get-Content $textFilePath | ForEach-Object { $textBox_location.Items.Add($_) } }
+    if (Test-Path $textFilePath) { Get-Content $textFilePath | ForEach-Object { $textBox_location.Items.Add($_) | Out-Null } }
 
     if ($pathLoadState -eq "Second") {
         Check-Valid-Location -buttonUpdateState "control"
@@ -499,6 +499,7 @@ $button_modinstall_folder.Add_Click({
             # Validate source folder path
             if ([string]::IsNullOrWhiteSpace($sourceFolderPath) -or -not (Test-Path -Path $sourceFolderPath)) {
                 $logbox.AppendText("Error: Invalid mod folder path provided. Provide a valid folder to copy.`n")
+
                 Check-Valid-Location -buttonUpdateState "control"
                 return
             }
@@ -596,7 +597,7 @@ $tableLayoutPanel.Controls.Add($tableLayoutPanelRegKey)
 # Create a ComboBox (dropdown box) so the reg key is easier to find later.
 $comboBox = New-Object System.Windows.Forms.ComboBox
 $comboBox.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
-$comboBox.Items.AddRange(@("Install via original CD's", "Copied files from original CD's", "Steam version", "GOG version"))
+$comboBox.Items.AddRange(@("Install via original CD's", "Copied files from original CD's", "Steam version", "GOG version")) | Out-Null
 $comboBox.SelectedIndex = 2  # Set default selection
 $comboBox.AutoSize = $true
 $comboBox.Dock = [System.Windows.Forms.DockStyle]::Fill
