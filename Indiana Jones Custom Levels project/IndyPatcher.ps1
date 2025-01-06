@@ -1237,7 +1237,7 @@ $button_shortcut.Text = "Create shortcut for dev mode"
 $button_shortcut.Dock = [System.Windows.Forms.DockStyle]::Fill
 $button_shortcut.Cursor = [System.Windows.Forms.Cursors]::Hand
 $button_shortcut.Add_Click({
-        $result = [System.Windows.Forms.MessageBox]::Show("Are you sure you want to create a shortcut to the game on your desktop? This shortcut will open in dev mode if you patched your game or you enabled dev mode. You will need to provide the path to your resource folder of the game install!", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+        $result = [System.Windows.Forms.MessageBox]::Show("Are you sure that you want to create a shortcut to the game on your desktop? This shortcut will open dev mode if you patched your game or you enabled dev mode.", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
             Check-Valid-Location -buttonUpdateState "disable"
 
