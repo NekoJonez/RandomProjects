@@ -1,7 +1,7 @@
 # NekoJonez presents Indiana Jones and the Infernal Machine - Automatic Patcher for custom levels.
 # Based upon the work & tools by the modders over at https://github.com/Jones3D-The-Infernal-Engine/Mods/tree/main/levels/sed
-# Written in PowerShell core 7.4.3. Will work with PowerShell 5.1 & 7+.
-# Build 1.6 - 06/10/2024
+# Written in PowerShell core 7.4.x. Will work with PowerShell 5.1 & 7+.
+# Build 1.6.1 - 06/01/2025
 # Visit my gaming blog: https://arpegi.wordpress.com
 
 # Function to move files while skipping existing files
@@ -24,18 +24,14 @@ function MoveFilesAndRemoveSource {
             }
         }
 
-        # Remove the source subfolder after moving its contents
         # TODO: Checking why it doesn't remove the folder here?
-        Remove-Item -Path $fullSourcePath -Recurse -Force
+        Remove-Item -Path $fullSourcePath -Recurse -Force # Remove the source subfolder after moving its contents
     }
 }
 
 # Let's edit the reg key. We give the reg path as a parameter since it's different per edition of the game.
 function Update-RegistryStartMode {
-    param(
-        [Parameter(Mandatory = $true)] [int]$selectedIndex,
-        [Parameter(Mandatory = $true)] [bool]$EnableDevMode
-    )
+    param( [Parameter(Mandatory = $true)] [int]$selectedIndex, [Parameter(Mandatory = $true)] [bool]$EnableDevMode )
 
     # Determine the registry paths based on the selected index
     switch ($selectedIndex) {
@@ -111,8 +107,8 @@ function Create-Shortcut {
 function Load-Paths {
     param ( [ValidateSet("first", "second")] [string] $pathLoadState )
 
-    $textBox_location.Items.Clear()
-    if (Test-Path $textFilePath) { Get-Content $textFilePath | ForEach-Object { $textBox_location.Items.Add($_) } }
+    $global:textBox_location.Items.Clear()
+    if (Test-Path $textFilePath) { Get-Content $textFilePath | ForEach-Object { $global:textBox_location.Items.Add($_) | Out-Null } }
 
     if ($pathLoadState -eq "Second") {
         Check-Valid-Location -buttonUpdateState "control"
@@ -124,8 +120,8 @@ function Load-Paths {
 
 # Function to check and update the button text based on the input
 function Update-ButtonText {
-    $inputText = $textBox_location.Text
-    if ($textBox_location.Items.Contains($inputText)) {
+    $inputText = $global:textBox_location.Text
+    if ($global:textBox_location.Items.Contains($inputText)) {
         $button_remember.Text = "Forget"
     }
     else {
@@ -137,8 +133,7 @@ function Update-ButtonText {
 function Install-Mods-Manually {
     param ( [string]$sourcePath, [string]$destinationPath )
 
-    # Define the folder array we can just move.
-    $subfolders = @("3do", "cog", "hi3do", "mat", "misc", "ndy", "sound")
+    $subfolders = @("3do", "cog", "hi3do", "mat", "misc", "ndy", "sound") # Define the folder array we can just move.
 
     # Define file type to destination mappings
     $fileTypeMappings = @{
@@ -198,12 +193,11 @@ function Install-Mods-Manually {
         param ( [string]$sourcePath, [string]$destinationPath )
 
         try {
-            # Ensure the destination path exists
-            if (!(Test-Path -Path $destinationPath -PathType Container)) { New-Item -Path $destinationPath -ItemType Directory | Out-Null }
+            if (!(Test-Path -Path $destinationPath -PathType Container)) { New-Item -Path $destinationPath -ItemType Directory | Out-Null } # Ensure the destination path exists
             Get-ChildItem -Path $sourcePath -Recurse | Move-Item -Destination $destinationPath -Force # Move the contents of the source subfolder to the destination subfolder
         }
         catch {
-            Write-Host "Error moving contents from $sourcePath to $destinationPath : $_"
+            Write-Host "Error moving contents from $sourcePath to $($destinationPath): $_"
         }
     }
 
@@ -225,16 +219,16 @@ function Check-Valid-Location {
         $valid_path.$null
 
         # Check if the textBox_location has a value
-        if (!($textBox_location.Text)) {
+        if (!($global:textBox_location.Text)) {
             $valid_path = "false"
         }
         else {
-            $valid_path = Join-Path -Path $textBox_location.Text -ChildPath "Indy3D.exe"
+            $valid_path = Join-Path -Path $global:textBox_location.Text -ChildPath "Indy3D.exe"
         }
 
         # Enable or disable buttons based on the existence of the file
         if (Test-Path -Path $valid_path) {
-            $textBox_location.Enabled = $true
+            $global:textBox_location.Enabled = $true
             $button_location.Enabled = $true
             $button_remember.Enabled = $true
             $button_open.Enabled = $true
@@ -260,7 +254,7 @@ function Check-Valid-Location {
     }
     elseif ($buttonUpdateState -eq "disable") {
         # Let's disable those buttons.
-        $textBox_location.Enabled = $false
+        $global:textBox_location.Enabled = $false
         $button_location.Enabled = $false
         $button_remember.Enabled = $false
         $button_open.Enabled = $false
@@ -319,25 +313,25 @@ $tableLayoutPanelLocation.Dock = [System.Windows.Forms.DockStyle]::Fill
 $tableLayoutPanelLocation.RowCount = 1
 $tableLayoutPanelLocation.ColumnCount = 4
 $tableLayoutPanelLocation.Height = 30
-$tableLayoutPanelLocation.ColumnStyles.Add($columnStyle1_location)
-$tableLayoutPanelLocation.ColumnStyles.Add($columnStyle2_location)
+$tableLayoutPanelLocation.ColumnStyles.Add($columnStyle1_location) | Out-Null
+$tableLayoutPanelLocation.ColumnStyles.Add($columnStyle2_location) | Out-Null
 $tableLayoutPanel.Controls.Add($tableLayoutPanelLocation)
 
 # Create a text box for user input
-$textBox_location = New-Object System.Windows.Forms.ComboBox
-$textBox_location.Dock = [System.Windows.Forms.DockStyle]::Fill
-$textBox_location.AutoSize = $true
-$textBox_location.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDown
-$tableLayoutPanelLocation.Controls.Add($textBox_location)
+$global:textBox_location = New-Object System.Windows.Forms.ComboBox
+$global:textBox_location.Dock = [System.Windows.Forms.DockStyle]::Fill
+$global:textBox_location.AutoSize = $true
+$global:textBox_location.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDown
+$tableLayoutPanelLocation.Controls.Add($global:textBox_location)
 
 # Event handler for ComboBox selection
-$textBox_location.add_SelectedIndexChanged({
+$global:textBox_location.add_SelectedIndexChanged({
         Update-ButtonText
         Check-Valid-Location -buttonUpdateState "control"
     })
 
 # Event handler for ComboBox text input
-$textBox_location.add_TextChanged({
+$global:textBox_location.add_TextChanged({
         Update-ButtonText
         Check-Valid-Location -buttonUpdateState "control"
     })
@@ -347,15 +341,13 @@ $button_location = New-Object System.Windows.Forms.Button
 $button_location.Text = "Browse"
 $button_location.AutoSize = $true
 $button_location.Cursor = [System.Windows.Forms.Cursors]::Hand
-$tableLayoutPanelLocation.Controls.Add($button_location)
-
-# Add the click event for the browse button
 $button_location.Add_Click({
         $folderBrowser = New-Object System.Windows.Forms.FolderBrowserDialog
         $folderBrowser.Description = "Select the Indiana Jones and the Infernal Machine resource folder"
         $folderBrowser.ShowNewFolderButton = $false
-        if ($folderBrowser.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { $textBox_location.Text = $folderBrowser.SelectedPath }
+        if ($folderBrowser.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { $global:textBox_location.Text = $folderBrowser.SelectedPath }
     })
+$tableLayoutPanelLocation.Controls.Add($button_location)
 
 # Create a button for the user to remember the resources folder
 $button_remember = New-Object System.Windows.Forms.Button
@@ -370,16 +362,14 @@ $textFilePath = "Indy3DPatcherPaths.txt" # What's that textfile that saved remem
 $button_remember.Add_Click({
         if ($button_remember.Text -eq "Remember") {
             # Let's check first if we have a valid path.
-            if ([string]::IsNullOrWhiteSpace($textBox_location.Text)) {
+            if ([string]::IsNullOrWhiteSpace($global:textBox_location.Text)) {
                 [System.Windows.Forms.MessageBox]::Show("Please enter a location.", $title)
             }
             else {
                 $result = [System.Windows.Forms.MessageBox]::Show("Are you sure you want to remember this location?", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
                 if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
-                    $enteredPath = $textBox_location.Text
-
+                    $enteredPath = $global:textBox_location.Text
                     $control_check_location = Join-Path $enteredPath -ChildPath "\Indy3D.exe"
-
                     $existingPaths = if (Test-Path $textFilePath) { Get-Content $textFilePath } else { @() } # Read the existing paths from the text file
 
                     if ($existingPaths -contains $enteredPath) {
@@ -410,7 +400,7 @@ $button_remember.Add_Click({
         elseif ($button_remember.Text -eq "Forget") {
             $result = [System.Windows.Forms.MessageBox]::Show("Are you sure you want to forget this location? This will only remove this location from the dropdown list in this tool.", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
             if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
-                $selectedPath = $textBox_location.SelectedItem
+                $selectedPath = $global:textBox_location.SelectedItem
                 if ($null -ne $selectedPath) {
                     try {
                         # Remove the selected path from the text file
@@ -419,7 +409,7 @@ $button_remember.Add_Click({
                         Set-Content -Path $textFilePath -Value $updatedPaths # Write the updated paths back to the file
 
                         # Let's make sure the UI reacts correctly.
-                        $textBox_location.Text = ""
+                        $global:textBox_location.Text = ""
                         Load-Paths -pathLoadState "Second" # Reload paths into the ComboBox
                         $logBox.AppendText("Success: Remembered path $selectedPath was removed from the list.`n")
                         $button_remember.Text = "Remember"
@@ -440,11 +430,9 @@ $button_open = New-Object System.Windows.Forms.Button
 $button_open.Text = "Open"
 $button_open.AutoSize = $true
 $button_open.Cursor = [System.Windows.Forms.Cursors]::Hand
-$tableLayoutPanelLocation.Controls.Add($button_open)
-
 $button_open.Add_Click({
-        $enteredPath = $textBox_location.Text
-        if (!([string]::IsNullOrWhiteSpace($textBox_location.Text))) {
+        $enteredPath = $global:textBox_location.Text
+        if (!([string]::IsNullOrWhiteSpace($global:textBox_location.Text))) {
             $control_check_location = Join-Path $enteredPath -ChildPath "\Indy3D.exe"
             if (Test-Path -Path $control_check_location) { Invoke-Item -Path $enteredPath }
         }
@@ -468,8 +456,8 @@ $tableLayoutPanelModInstall.Dock = [System.Windows.Forms.DockStyle]::Fill
 $tableLayoutPanelModInstall.RowCount = 1
 $tableLayoutPanelModInstall.ColumnCount = 2
 $tableLayoutPanelModInstall.Height = 30
-$tableLayoutPanelModInstall.ColumnStyles.Add($columnStyle1_modinstall)
-$tableLayoutPanelModInstall.ColumnStyles.Add($columnStyle2_modinstall)
+$tableLayoutPanelModInstall.ColumnStyles.Add($columnStyle1_modinstall) | Out-Null
+$tableLayoutPanelModInstall.ColumnStyles.Add($columnStyle2_modinstall) | Out-Null
 $tableLayoutPanelModInstall.Height = 30
 $tableLayoutPanel.Controls.Add($tableLayoutPanelModInstall)
 
@@ -478,13 +466,11 @@ $button_modinstall_folder = New-Object System.Windows.Forms.Button
 $button_modinstall_folder.Text = "Folder"
 $button_modinstall_folder.Dock = [System.Windows.Forms.DockStyle]::Fill
 $button_modinstall_folder.Cursor = [System.Windows.Forms.Cursors]::Hand
-$tableLayoutPanelModInstall.Controls.Add($button_modinstall_folder)
-
 $button_modinstall_folder.Add_Click({
         Check-Valid-Location -buttonUpdateState "disable"
 
         # Extract paths from controls
-        $basePath = $textBox_location.Text
+        $basePath = $global:textBox_location.Text
         $path_control = Join-Path -Path $basePath -ChildPath "Indy3D.exe"
         $extraction_path = $basePath
 
@@ -513,6 +499,7 @@ $button_modinstall_folder.Add_Click({
             # Validate source folder path
             if ([string]::IsNullOrWhiteSpace($sourceFolderPath) -or -not (Test-Path -Path $sourceFolderPath)) {
                 $logbox.AppendText("Error: Invalid mod folder path provided. Provide a valid folder to copy.`n")
+
                 Check-Valid-Location -buttonUpdateState "control"
                 return
             }
@@ -529,19 +516,18 @@ $button_modinstall_folder.Add_Click({
             }
         }
     })
+$tableLayoutPanelModInstall.Controls.Add($button_modinstall_folder)
 
 # With this button, the user can install mods via a downloaded ZIP folder.
 $button_modinstall_zip = New-Object System.Windows.Forms.Button
 $button_modinstall_zip.Text = "Zip"
 $button_modinstall_zip.Dock = [System.Windows.Forms.DockStyle]::Fill
 $button_modinstall_zip.Cursor = [System.Windows.Forms.Cursors]::Hand
-$tableLayoutPanelModInstall.Controls.Add($button_modinstall_zip)
-
 $button_modinstall_zip.Add_Click({
         Check-Valid-Location -buttonUpdateState "disable"
 
         # Define the path to check and the initial extraction path
-        $basePath = $textBox_location.Text
+        $basePath = $global:textBox_location.Text
         $path_control = Join-Path -Path $basePath -ChildPath "Indy3D.exe"
 
         if (Test-Path -Path $path_control) {
@@ -586,6 +572,7 @@ $button_modinstall_zip.Add_Click({
             return
         }
     })
+$tableLayoutPanelModInstall.Controls.Add($button_modinstall_zip)
 
 # Create a label for the registry key
 $label_regkey = New-Object System.Windows.Forms.Label
@@ -602,15 +589,15 @@ $tableLayoutPanelRegKey.Dock = [System.Windows.Forms.DockStyle]::Fill
 $tableLayoutPanelRegKey.RowCount = 1
 $tableLayoutPanelRegKey.ColumnCount = 3
 $tableLayoutPanelRegKey.Height = 30
-$tableLayoutPanelRegKey.ColumnStyles.Add($columnStyle1_RegKey)
-$tableLayoutPanelRegKey.ColumnStyles.Add($columnStyle2_RegKey)
-$tableLayoutPanelRegKey.ColumnStyles.Add($columnStyle3_RegKey)
+$tableLayoutPanelRegKey.ColumnStyles.Add($columnStyle1_RegKey) | Out-Null
+$tableLayoutPanelRegKey.ColumnStyles.Add($columnStyle2_RegKey) | Out-Null
+$tableLayoutPanelRegKey.ColumnStyles.Add($columnStyle3_RegKey) | Out-Null
 $tableLayoutPanel.Controls.Add($tableLayoutPanelRegKey)
 
 # Create a ComboBox (dropdown box) so the reg key is easier to find later.
 $comboBox = New-Object System.Windows.Forms.ComboBox
 $comboBox.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
-$comboBox.Items.AddRange(@("Install via original CD's", "Copied files from original CD's", "Steam version", "GOG version"))
+$comboBox.Items.AddRange(@("Install via original CD's", "Copied files from original CD's", "Steam version", "GOG version")) | Out-Null
 $comboBox.SelectedIndex = 2  # Set default selection
 $comboBox.AutoSize = $true
 $comboBox.Dock = [System.Windows.Forms.DockStyle]::Fill
@@ -621,8 +608,6 @@ $button_enable_dev = New-Object System.Windows.Forms.Button
 $button_enable_dev.Text = "Enable dev mode"
 $button_enable_dev.Dock = [System.Windows.Forms.DockStyle]::Fill
 $button_enable_dev.Cursor = [System.Windows.Forms.Cursors]::Hand
-$tableLayoutPanelRegKey.Controls.Add($button_enable_dev)
-
 $button_enable_dev.Add_Click({
         $result = [System.Windows.Forms.MessageBox]::Show("This will patch the registry so the dev mode is enabled. Are you want to sure you want to continue?", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
@@ -638,14 +623,13 @@ $button_enable_dev.Add_Click({
             Check-Valid-Location -buttonUpdateState "control"
         }
     })
+$tableLayoutPanelRegKey.Controls.Add($button_enable_dev)
 
 # Create a button to disable the dev mode.
 $button_disable_dev = New-Object System.Windows.Forms.Button
 $button_disable_dev.Text = "Disable dev mode"
 $button_disable_dev.Dock = [System.Windows.Forms.DockStyle]::Fill
 $button_disable_dev.Cursor = [System.Windows.Forms.Cursors]::Hand
-$tableLayoutPanelRegKey.Controls.Add($button_disable_dev)
-
 $button_disable_dev.Add_Click({
         $result = [System.Windows.Forms.MessageBox]::Show("This will patch the registry so the dev mode is disabled. Are you sure you want to continue?", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
@@ -661,26 +645,21 @@ $button_disable_dev.Add_Click({
             Check-Valid-Location -buttonUpdateState "control"
         }
     })
+$tableLayoutPanelRegKey.Controls.Add($button_disable_dev)
 
 # Create a button to start the patching proceess
 $button_patch = New-Object System.Windows.Forms.Button
 $button_patch.Text = "Patch"
 $button_patch.Dock = [System.Windows.Forms.DockStyle]::Fill
 $button_patch.Cursor = [System.Windows.Forms.Cursors]::Hand
-$tableLayoutPanel.Controls.Add($button_patch)
-
-# Add button click event
 $button_patch.Add_Click({
         $result = [System.Windows.Forms.MessageBox]::Show("This will start the patching process with the selected values. Are you certain? If something goes wrong, you'll have to restart the tool.", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
             Check-Valid-Location -buttonUpdateState "disable"
 
-            if ($textBox_location.Text) {
-                $location_checker = Join-Path -Path $textBox_location.Text -ChildPath "\Indy3D.exe"
-                if (Test-Path -Path $location_checker) {
-                    # We can continue, it's most likely the installation folder. We could implement it better, but for this version I feel lazy.
-                }
-                else {
+            if ($global:textBox_location.Text) {
+                $location_checker = Join-Path -Path $global:textBox_location.Text -ChildPath "\Indy3D.exe"
+                if (!(Test-Path -Path $location_checker)) {
                     $logBox.AppendText("Error: Invalid resource path provided. Stopping pathing procedure.`n")
                     Check-Valid-Location -buttonUpdateState "control"
                     return
@@ -694,7 +673,7 @@ $button_patch.Add_Click({
 
             # Let's download the working version of the tools. I'm going to hardcode v0.10.1 here for now, since if Kovic's PR (https://github.com/smlu/Urgon/pull/11) ever gets merged,
             # later logic will need to change.
-            $Tools_Temp_Path = $textBox_location.Text + "\urgon-windows-x86-64.zip"
+            $Tools_Temp_Path = $global:textBox_location.Text + "\urgon-windows-x86-64.zip"
 
             try {
                 Invoke-WebRequest -Uri https://github.com/smlu/Urgon/releases/download/v0.10.1/urgon-windows-x86-64.zip -OutFile $Tools_Temp_Path
@@ -707,7 +686,7 @@ $button_patch.Add_Click({
             }
 
             try {
-                Expand-Archive -Path $Tools_Temp_Path -DestinationPath $textbox_location.Text
+                Expand-Archive -Path $Tools_Temp_Path -DestinationPath $global:textBox_location.Text
                 $logBox.AppendText("Success: Tools v0.10.1 succesfully extracted from zip file and placed in resource folder.`n")
             }
             catch {
@@ -716,14 +695,13 @@ $button_patch.Add_Click({
                 return
             }
 
-            # Let's go to that resource folder.
-            Set-Location $textBox_location.Text
+            Set-Location $global:textBox_location.Text # Let's go to that resource folder.
 
             # Let's first extract those GOB files. Since, this tool doesn't really work with extracting to the desired folder, let's move the files afterwards.
-            $gob_tool_test = Join-Path $textBox_location.Text -ChildPath "\gobext.exe"
-            $gob_extract_cd1 = Join-Path $textBox_location.Text -ChildPath "\CD1.gob"
-            $gob_extract_cd2 = Join-Path $textBox_location.Text -ChildPath "\CD2.gob"
-            $gob_extract_jones3d = Join-Path $textBox_location.Text -ChildPath "\JONES3D.gob"
+            $gob_tool_test = Join-Path $global:textBox_location.Text -ChildPath "\gobext.exe"
+            $gob_extract_cd1 = Join-Path $global:textBox_location.Text -ChildPath "\CD1.gob"
+            $gob_extract_cd2 = Join-Path $global:textBox_location.Text -ChildPath "\CD2.gob"
+            $gob_extract_jones3d = Join-Path $global:textBox_location.Text -ChildPath "\JONES3D.gob"
             if (Test-Path -Path $gob_tool_test) {
                 if (Test-Path -Path $gob_extract_cd1) {
                     $logBox.AppendText("Info: Extraction of GOB_CD1 started.`n")
@@ -767,17 +745,17 @@ $button_patch.Add_Click({
 
             # ! Warning to later self. Kovic created a patch PR that the gobext.exe doesn't work with sub folders anymore. If a newer version releases, refactor the code underneath here.
             # Define source parent folders and destination folder
-            $cd1_gob_location = Join-Path $textbox_location.text -ChildPath "\CD1_GOB"
-            $cd2_gob_location = Join-Path $textbox_location.text -ChildPath "\CD2_GOB"
-            $jones3d_gob_location = Join-Path $textbox_location.text -ChildPath "\JONES3D_GOB"
-            $destinationPath = $textbox_location.text
+            $cd1_gob_location = Join-Path $global:textBox_location.text -ChildPath "\CD1_GOB"
+            $cd2_gob_location = Join-Path $global:textBox_location.text -ChildPath "\CD2_GOB"
+            $jones3d_gob_location = Join-Path $global:textBox_location.text -ChildPath "\JONES3D_GOB"
+            $destinationPath = $global:textBox_location.text
 
             # Define subfolders for each parent folder
             $cd1_and_2_subfolders = @("3do", "cog", "hi3do", "mat", "misc", "ndy")
             $jones3d_subfolders = @("3do", "cog", "mat", "misc", "ndy")
 
             # Let's rename the original cog folder for backup propuses.
-            $cog_folder = Join-Path $textbox_location.text -ChildPath "\Cog"
+            $cog_folder = Join-Path $global:textBox_location.text -ChildPath "\Cog"
             if (Test-Path -Path $cog_folder -PathType Container) {
                 # Get the new folder name with "_backup"
                 $newFolderName = [System.IO.Path]::GetFileName($cog_folder) + "_backup"
@@ -819,8 +797,8 @@ $button_patch.Add_Click({
             $logBox.AppendText("Success: GOB files were renamed succesfully. You can remove the '_backup' if you want to reuse the standard ones.`n")
 
             # Now, let's move the CNDtool to it's rightful location.
-            $cnd_tool_test = Join-Path $textBox_location.Text -ChildPath "\cndtool.exe"
-            $ndy_folder_location = Join-Path $textBox_location.text -ChildPath "\ndy"
+            $cnd_tool_test = Join-Path $global:textBox_location.Text -ChildPath "\cndtool.exe"
+            $ndy_folder_location = Join-Path $global:textBox_location.text -ChildPath "\ndy"
             if (Test-Path -Path $cnd_tool_test) {
                 if (Test-Path -Path $ndy_folder_location) {
                     Move-Item -Path $cnd_tool_test -Destination $ndy_folder_location
@@ -840,24 +818,24 @@ $button_patch.Add_Click({
             Set-Location $ndy_folder_location
 
             # The massive wall of CND variables.
-            $cnd_extract_lvl01 = Join-Path $textBox_location.Text -ChildPath "\ndy\00_cyn.cnd"
-            $cnd_extract_lvl02 = Join-Path $textBox_location.Text -ChildPath "\ndy\01_bab.cnd"
-            $cnd_extract_lvl03 = Join-Path $textBox_location.Text -ChildPath "\ndy\02_riv.cnd"
-            $cnd_extract_lvl04 = Join-Path $textBox_location.Text -ChildPath "\ndy\03_shs.cnd"
-            $cnd_extract_lvl05 = Join-Path $textBox_location.Text -ChildPath "\ndy\05_lag.cnd"
-            $cnd_extract_lvl06 = Join-Path $textBox_location.Text -ChildPath "\ndy\06_vol.cnd"
-            $cnd_extract_lvl07 = Join-Path $textBox_location.Text -ChildPath "\ndy\07_tem.cnd"
-            $cnd_extract_lvl08 = Join-Path $textBox_location.Text -ChildPath "\ndy\08_teo.cnd"
-            $cnd_extract_lvl09 = Join-Path $textBox_location.Text -ChildPath "\ndy\09_olv.cnd"
-            $cnd_extract_lvl10 = Join-Path $textBox_location.Text -ChildPath "\ndy\10_sea.cnd"
-            $cnd_extract_lvl11 = Join-Path $textBox_location.Text -ChildPath "\ndy\11_pyr.cnd"
-            $cnd_extract_lvl12 = Join-Path $textBox_location.Text -ChildPath "\ndy\12_sol.cnd"
-            $cnd_extract_lvl13 = Join-Path $textBox_location.Text -ChildPath "\ndy\13_nub.cnd"
-            $cnd_extract_lvl14 = Join-Path $textBox_location.Text -ChildPath "\ndy\14_inf.cnd"
-            $cnd_extract_lvl15 = Join-Path $textBox_location.Text -ChildPath "\ndy\15_aet.cnd"
-            $cnd_extract_lvl16 = Join-Path $textBox_location.Text -ChildPath "\ndy\16_jep.cnd"
-            $cnd_extract_lvl17 = Join-Path $textBox_location.Text -ChildPath "\ndy\17_pru.cnd"
-            $cnd_extract_lvl18 = Join-Path $textBox_location.Text -ChildPath "\ndy\jones3dstatic.cnd"
+            $cnd_extract_lvl01 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\00_cyn.cnd"
+            $cnd_extract_lvl02 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\01_bab.cnd"
+            $cnd_extract_lvl03 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\02_riv.cnd"
+            $cnd_extract_lvl04 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\03_shs.cnd"
+            $cnd_extract_lvl05 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\05_lag.cnd"
+            $cnd_extract_lvl06 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\06_vol.cnd"
+            $cnd_extract_lvl07 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\07_tem.cnd"
+            $cnd_extract_lvl08 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\08_teo.cnd"
+            $cnd_extract_lvl09 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\09_olv.cnd"
+            $cnd_extract_lvl10 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\10_sea.cnd"
+            $cnd_extract_lvl11 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\11_pyr.cnd"
+            $cnd_extract_lvl12 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\12_sol.cnd"
+            $cnd_extract_lvl13 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\13_nub.cnd"
+            $cnd_extract_lvl14 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\14_inf.cnd"
+            $cnd_extract_lvl15 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\15_aet.cnd"
+            $cnd_extract_lvl16 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\16_jep.cnd"
+            $cnd_extract_lvl17 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\17_pru.cnd"
+            $cnd_extract_lvl18 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\jones3dstatic.cnd"
 
             if (Test-Path -Path $cnd_extract_lvl01) {
                 $logBox.AppendText("Info: NDY file for level 01 found. Extracting...`n")
@@ -1058,24 +1036,24 @@ $button_patch.Add_Click({
             }
 
             # The massive wall of extracted CND folder variables.
-            $cnd_folder_extract_lvl01 = Join-Path $textBox_location.Text -ChildPath "\ndy\00_cyn"
-            $cnd_folder_extract_lvl02 = Join-Path $textBox_location.Text -ChildPath "\ndy\01_bab"
-            $cnd_folder_extract_lvl03 = Join-Path $textBox_location.Text -ChildPath "\ndy\02_riv"
-            $cnd_folder_extract_lvl04 = Join-Path $textBox_location.Text -ChildPath "\ndy\03_shs"
-            $cnd_folder_extract_lvl05 = Join-Path $textBox_location.Text -ChildPath "\ndy\05_lag"
-            $cnd_folder_extract_lvl06 = Join-Path $textBox_location.Text -ChildPath "\ndy\06_vol"
-            $cnd_folder_extract_lvl07 = Join-Path $textBox_location.Text -ChildPath "\ndy\07_tem"
-            $cnd_folder_extract_lvl08 = Join-Path $textBox_location.Text -ChildPath "\ndy\08_teo"
-            $cnd_folder_extract_lvl09 = Join-Path $textBox_location.Text -ChildPath "\ndy\09_olv"
-            $cnd_folder_extract_lvl10 = Join-Path $textBox_location.Text -ChildPath "\ndy\10_sea"
-            $cnd_folder_extract_lvl11 = Join-Path $textBox_location.Text -ChildPath "\ndy\11_pyr"
-            $cnd_folder_extract_lvl12 = Join-Path $textBox_location.Text -ChildPath "\ndy\12_sol"
-            $cnd_folder_extract_lvl13 = Join-Path $textBox_location.Text -ChildPath "\ndy\13_nub"
-            $cnd_folder_extract_lvl14 = Join-Path $textBox_location.Text -ChildPath "\ndy\14_inf"
-            $cnd_folder_extract_lvl15 = Join-Path $textBox_location.Text -ChildPath "\ndy\15_aet"
-            $cnd_folder_extract_lvl16 = Join-Path $textBox_location.Text -ChildPath "\ndy\16_jep"
-            $cnd_folder_extract_lvl17 = Join-Path $textBox_location.Text -ChildPath "\ndy\17_pru"
-            $cnd_folder_extract_lvl18 = Join-Path $textBox_location.Text -ChildPath "\ndy\jones3dstatic"
+            $cnd_folder_extract_lvl01 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\00_cyn"
+            $cnd_folder_extract_lvl02 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\01_bab"
+            $cnd_folder_extract_lvl03 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\02_riv"
+            $cnd_folder_extract_lvl04 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\03_shs"
+            $cnd_folder_extract_lvl05 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\05_lag"
+            $cnd_folder_extract_lvl06 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\06_vol"
+            $cnd_folder_extract_lvl07 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\07_tem"
+            $cnd_folder_extract_lvl08 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\08_teo"
+            $cnd_folder_extract_lvl09 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\09_olv"
+            $cnd_folder_extract_lvl10 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\10_sea"
+            $cnd_folder_extract_lvl11 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\11_pyr"
+            $cnd_folder_extract_lvl12 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\12_sol"
+            $cnd_folder_extract_lvl13 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\13_nub"
+            $cnd_folder_extract_lvl14 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\14_inf"
+            $cnd_folder_extract_lvl15 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\15_aet"
+            $cnd_folder_extract_lvl16 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\16_jep"
+            $cnd_folder_extract_lvl17 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\17_pru"
+            $cnd_folder_extract_lvl18 = Join-Path $global:textBox_location.Text -ChildPath "\ndy\jones3dstatic"
 
             $ndy_extraction_subfolders = @("key", "mat", "sound")
 
@@ -1106,8 +1084,8 @@ $button_patch.Add_Click({
             foreach ($CNDToRemoveFolder in $CNDToRemoveFolders) { if (Test-Path -Path $CNDToRemoveFolder) { Remove-Item -Path $CNDToRemoveFolder -Recurse -Force } }
 
             # Now, let's move that Key folder.
-            $key_folder_temp = Join-Path -Path $textBox_location.Text -ChildPath "\key"
-            $key_folder_move_location = Join-Path -Path $textBox_location.Text -ChildPath "\3do"
+            $key_folder_temp = Join-Path -Path $global:textBox_location.Text -ChildPath "\key"
+            $key_folder_move_location = Join-Path -Path $global:textBox_location.Text -ChildPath "\3do"
 
             try {
                 $logBox.AppendText("Info: moving the key folder to it's rightful location.`n")
@@ -1128,7 +1106,7 @@ $button_patch.Add_Click({
 
             foreach ($message in $returnMessages) { $logBox.AppendText("$message`n") } # Display the return messages to the user
 
-            $dev_mode_exe_location = Join-Path $textBox_location.Text -ChildPath "Indy3D.exe"
+            $dev_mode_exe_location = Join-Path $global:textBox_location.Text -ChildPath "Indy3D.exe"
             $shortcutName = "Indiana Jones and the Infernal Machine - Dev mode"
             $desktop_location = [Environment]::GetFolderPath("Desktop")
 
@@ -1139,33 +1117,31 @@ $button_patch.Add_Click({
             Check-Valid-Location -buttonUpdateState "control"
         }
     })
+$tableLayoutPanel.Controls.Add($button_patch)
 
 # Create a button to undo the patch process
 $button_unpatch = New-Object System.Windows.Forms.Button
 $button_unpatch.Text = "Undo patch"
 $button_unpatch.Dock = [System.Windows.Forms.DockStyle]::Fill
 $button_unpatch.Cursor = [System.Windows.Forms.Cursors]::Hand
-$tableLayoutPanel.Controls.Add($button_unpatch)
-
 $button_unpatch.Add_Click({
         $result = [System.Windows.Forms.MessageBox]::Show("This will undo the patching of the game done by this script. It will undo changes in the resource folder & the registry. This will also uninstall all custom levels. Be sure the the following information is correct: the path to the resource folder and the selected version for the registry. Are you certain?", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
             Check-Valid-Location -buttonUpdateState "disable"
 
             # Let's undo the renaming of the GOB files. This first array is if the user used my old version of the tool.
-            $gob_backup_extract_cd1 = Join-Path $textBox_location.Text -ChildPath "\CD1_backup.gob"
-            $gob_backup_extract_cd2 = Join-Path $textBox_location.Text -ChildPath "\CD2_backup.gob"
-            $gob_backup_extract_jones3d = Join-Path $textBox_location.Text -ChildPath "\JONES3D_backup.gob"
+            $gob_backup_extract_cd1 = Join-Path $global:textBox_location.Text -ChildPath "\CD1_backup.gob"
+            $gob_backup_extract_cd2 = Join-Path $global:textBox_location.Text -ChildPath "\CD2_backup.gob"
+            $gob_backup_extract_jones3d = Join-Path $global:textBox_location.Text -ChildPath "\JONES3D_backup.gob"
             $fileBackupPathsToRename = @($gob_backup_extract_cd1, $gob_backup_extract_cd2, $gob_backup_extract_jones3d)
 
             # Let's undo the renaming of the GOB files. This second array is if the user used the new version of the tool.
-            $gob_bak_extract_cd1 = Join-Path $textBox_location.Text -ChildPath "\CD1.gob.bak"
-            $gob_bak_extract_cd2 = Join-Path $textBox_location.Text -ChildPath "\CD2.gob.bak"
-            $gob_bak_extract_jones3d = Join-Path $textBox_location.Text -ChildPath "\JONES3D.gob.bak"
+            $gob_bak_extract_cd1 = Join-Path $global:textBox_location.Text -ChildPath "\CD1.gob.bak"
+            $gob_bak_extract_cd2 = Join-Path $global:textBox_location.Text -ChildPath "\CD2.gob.bak"
+            $gob_bak_extract_jones3d = Join-Path $global:textBox_location.Text -ChildPath "\JONES3D.gob.bak"
             $fileBakPathsToRename = @($gob_bak_extract_cd1, $gob_bak_extract_cd2, $gob_bak_extract_jones3d)
 
             $filePathsToRename = $fileBackupPathsToRename + $fileBakPathsToRename # Combine both arrays for the renaming process
-
             foreach ($filePathToRename in $filePathsToRename) {
                 if (Test-Path -Path $filePathToRename) {
                     $fileDirectory = [System.IO.Path]::GetDirectoryName($filePathToRename)
@@ -1194,8 +1170,8 @@ $button_unpatch.Add_Click({
 
             $logBox.AppendText("Success: reverted the backup GOB files to it's original state.`n")
 
-            $cog_backup_folder = Join-Path $textbox_location.text -ChildPath "\Cog_backup"
-            $cog_mod_folder = Join-Path $textbox_location.text -ChildPath "\Cog"
+            $cog_backup_folder = Join-Path $global:textBox_location.text -ChildPath "\Cog_backup"
+            $cog_mod_folder = Join-Path $global:textBox_location.text -ChildPath "\Cog"
             if (Test-Path -Path $cog_backup_folder -PathType Container) {
                 Remove-Item -Path $cog_mod_folder -Recurse -Force
                 Rename-Item -Path $cog_backup_folder -NewName "Cog" -Force
@@ -1205,20 +1181,20 @@ $button_unpatch.Add_Click({
                 $logBox.AppendText("Warning: The original COG folder wasn't found. This could result in game issues.`n")
             }
 
-            $3do_mod_folder = Join-Path -Path $textBox_location.Text -ChildPath "\3do"
-            $hi3do_mod_folder = Join-Path -Path $textBox_location.Text -ChildPath "\hi3do"
-            $mat_mod_folder = Join-Path -Path $textBox_location.Text -ChildPath "\mat"
-            $misc_mod_folder = Join-Path -Path $textBox_location.Text -ChildPath "\misc"
-            $ndy_mod_folder = Join-Path -Path $textBox_location.Text -ChildPath "\ndy"
-            $sound_mod_folder = Join-Path -Path $textBox_location.Text -ChildPath "\sound"
+            $3do_mod_folder = Join-Path -Path $global:textBox_location.Text -ChildPath "\3do"
+            $hi3do_mod_folder = Join-Path -Path $global:textBox_location.Text -ChildPath "\hi3do"
+            $mat_mod_folder = Join-Path -Path $global:textBox_location.Text -ChildPath "\mat"
+            $misc_mod_folder = Join-Path -Path $global:textBox_location.Text -ChildPath "\misc"
+            $ndy_mod_folder = Join-Path -Path $global:textBox_location.Text -ChildPath "\ndy"
+            $sound_mod_folder = Join-Path -Path $global:textBox_location.Text -ChildPath "\sound"
             $ModFoldersToRemove = @($3do_mod_folder, $hi3do_mod_folder, $mat_mod_folder, $misc_mod_folder, $ndy_mod_folder, $sound_mod_folder)
             foreach ($ModFolderToRemove in $ModFoldersToRemove) { if (Test-Path -Path $ModFolderToRemove) { Remove-Item -Path $ModFolderToRemove -Recurse -Force } }
 
             $logBox.AppendText("Success: Removed all mod extracted folders.`n")
 
-            $gobext_tool = Join-Path $textBox_location.Text -ChildPath "gobext.exe"
-            $ma_tool = Join-Path $textBox_location.Text -ChildPath "matool.exe"
-            $Tools_Temp_Path = $textBox_location.Text + "\urgon-windows-x86-64.zip"
+            $gobext_tool = Join-Path $global:textBox_location.Text -ChildPath "gobext.exe"
+            $ma_tool = Join-Path $global:textBox_location.Text -ChildPath "matool.exe"
+            $Tools_Temp_Path = $global:textBox_location.Text + "\urgon-windows-x86-64.zip"
             $ToolsToClean = @($gobext_tool, $ma_tool, $Tools_Temp_Path)
             foreach ($ToolToClean in $ToolsToClean) { if (Test-Path -Path $ToolToClean) { Remove-Item -Path $ToolToClean -Recurse -Force } }
 
@@ -1234,6 +1210,7 @@ $button_unpatch.Add_Click({
             Check-Valid-Location -buttonUpdateState "control"
         }
     })
+$tableLayoutPanel.Controls.Add($button_unpatch)
 
 # Create a text box for logs
 $logBox = New-Object System.Windows.Forms.TextBox
@@ -1259,21 +1236,19 @@ $button_shortcut = New-Object System.Windows.Forms.Button
 $button_shortcut.Text = "Create shortcut for dev mode"
 $button_shortcut.Dock = [System.Windows.Forms.DockStyle]::Fill
 $button_shortcut.Cursor = [System.Windows.Forms.Cursors]::Hand
-$tableLayoutBottomButtons.Controls.Add($button_shortcut)
-
 $button_shortcut.Add_Click({
-        $result = [System.Windows.Forms.MessageBox]::Show("Are you sure you want to create a shortcut to the game on your desktop? This shortcut will open in dev mode if you patched your game or you enabled dev mode. You will need to provide the path to your resource folder of the game install!", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+        $result = [System.Windows.Forms.MessageBox]::Show("Are you sure that you want to create a shortcut to the game on your desktop? This shortcut will open dev mode if you patched your game or you enabled dev mode.", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
             Check-Valid-Location -buttonUpdateState "disable"
 
             # Let's create said shortcut.
-            if ($null -eq $textBox_location.Text) {
+            if ($null -eq $global:textBox_location.Text) {
                 $logBox.AppendText("Error: no valid resource path provided. `n")
                 Check-Valid-Location -buttonUpdateState "control"
                 return
             }
             else {
-                $dev_mode_exe_location = $textBox_location.Text + "\Indy3D.exe"
+                $dev_mode_exe_location = $global:textBox_location.Text + "\Indy3D.exe"
                 if (Test-Path -Path $dev_mode_exe_location) {
                     $shortcutName = "Indiana Jones and the Infernal Machine - Dev mode"
                     $desktop_location = [Environment]::GetFolderPath("Desktop")
@@ -1290,22 +1265,22 @@ $button_shortcut.Add_Click({
             }
         }
     })
+$tableLayoutBottomButtons.Controls.Add($button_shortcut)
 
 # Create an exit button.
 $button_exit = New-Object System.Windows.Forms.Button
 $button_exit.Text = "Exit tool"
 $button_exit.Dock = [System.Windows.Forms.DockStyle]::Fill
 $button_exit.Cursor = [System.Windows.Forms.Cursors]::Hand
-$tableLayoutBottomButtons.Controls.Add($button_exit)
-
 $button_exit.Add_Click({
         $result = [System.Windows.Forms.MessageBox]::Show("Are you sure you want to exit?", $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
         if ($result -eq [System.Windows.Forms.DialogResult]::Yes) { $form.Close() }
     })
+$tableLayoutBottomButtons.Controls.Add($button_exit)
 
 # Create the credit label
 $label_credit = New-Object System.Windows.Forms.Label
-$label_credit.Text = "$title - v1.6 - Released 06/10/2024"
+$label_credit.Text = "$title - v1.6.1 - Released 06/01/2025"
 $label_credit.AutoSize = $true
 $label_credit.Dock = [System.Windows.Forms.DockStyle]::Fill
 $label_credit.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
